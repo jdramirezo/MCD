@@ -1,0 +1,16 @@
+Name,Minimum Wage (€/hour),Debt (% of GDP),Inflation Rate (%),GDP per Capita (€),Government Deficit/Surplus (% of GDP),Electricity Prices (€/MWh),Tax Burden (% of GDP),"Homicide Rate (per 100,000 inhabitants)",Education Level (% with upper secondary education),Citizen Satisfaction,Life Expectancy (years),Religion,Language,Hair color,Corruption Perception Index,Number of Holidays
+France,11.88,109.9,5.7,33750,5.5,251.3,45.2,1.2,82.00,1,82,Christianity (Roman Catholicism),French,25,60,11
+Canada,15.75,66.3,3.4,53371,3.9,120,33,1.8,91.00,3,82,Christianity (Roman Catholicism and Protestantism),English and French,25,6,10
+Belgium,12.57,103.1,2.3,37310,4.2,377.2,44.6,1.7,82.00,3,82,Christianity (Roman Catholicism),"Dutch, French, German",25,6,10
+Malta,4.25,47.4,5.6,26110,4.5,147.7,32,1.6,70.00,1,83,Christianity (Roman Catholicism),Maltese and English,25,2,14
+Czech Republic,4.41,42.4,14.8,18480,3.8,303.9,34,0.6,94.00,2,79,Christianity (Roman Catholicism),Czech,25,20,13
+Norway,15,40,5.8,72150,3.9,121.1,38,0.5,82.00,4,83,Christianity (Evangelical Lutheran),Norwegian,100,100,12
+Denmark,11.39,33.6,3.4,52510,3.3,307.6,46,0.8,82.00,4,81,Christianity (Evangelical Lutheran),Danish,100,100,11
+Luxembourg,18.28,25.5,2.9,83320,0.7,190.9,39,0.3,82.00,4,82,Christianity (Roman Catholicism),"Luxembourgish, French, German",25,6,10
+Switzerland,26.05,42,2.3,63870,1,150,28.5,0.5,86.00,4,83,Christianity (Roman Catholicism and Protestantism),"German, French, Italian, Romansh",25,100,7
+Germany,12.82,62.9,6,36290,2.6,416.2,40,0.9,86.00,3,81,Christianity (Roman Catholicism and Protestantism),German,25,6,9
+Poland,4.33,49.7,10.9,14880,5.3,229.1,32,0.7,90.00,2,78,Christianity (Roman Catholicism),Polish,25,6,13
+Sweden,16.38,31.5,5.9,44620,0.6,187,44,1.1,87.00,4,82,Christianity (Lutheran),Swedish,100,100,13
+Portugal,4.94,97.9,5.3,19250,1.2,239.5,36,0.6,48.00,1,81,Christianity (Roman Catholicism),Portuguese,25,6,13
+Finland,17.5,77.1,4.3,36470,3,204.2,42,1.4,88.00,4,82,Christianity (Evangelical Lutheran),Finnish and Swedish,100,100,12
+Ireland,13.5,49.3,5.2,71700,1.5,374.6,23,0.9,82.00,3,82,Christianity (Roman Catholicism),Irish and English,25,6,9
