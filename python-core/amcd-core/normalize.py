@@ -64,9 +64,23 @@ class NormalisedData:
     def normalise_sum(self):
         """This method will normalise following the formula v/sum(V)"""
         alternatives = self.set_to_maximise().alternatives
+        for crit in self.criteria:
+            sum_value = sum(alt.values[crit.name] for alt in alternatives)
+            for alt in alternatives:
+                alt.values[crit.name] = alt.values[crit.name] / sum_value if sum_value != 0 else 0
+        return self
+    
+    def normalise_vector(self):
+        """This method will normalise following the formula v/sqrt(sum(V^2))"""
+        alternatives = self.set_to_maximise().alternatives
+        for crit in self.criteria:
+            sum_squares = sum(alt.values[crit.name] ** 2 for alt in alternatives)
+            norm = sum_squares ** 0.5
+            for alt in alternatives:
+                alt.values[crit.name] = alt.values[crit.name] / norm if norm != 0 else 0
+        return self
         
-    
-    
+
 if __name__ == "__main__":
     # Filter the non-numeric, non-bare_minimum values from the criteria
     criteria = [crit for crit in load_criteria(Path(f"test/criteria.json")) if crit.type == "numeric" and crit.weight > 0 ]
