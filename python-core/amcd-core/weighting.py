@@ -52,6 +52,20 @@ class NormalisedData:
                 alt.values[crit.name] = alt.values[crit.name] / max_value if max_value != 0 else 0
         return self
     
+    def normalise_max_min(self):
+        """This method will normalise the values of all the alternatives following the formula: (v-min(V))/(max(V)-min(V))"""
+        alternatives = self.set_to_maximise().alternatives
+        for crit in self.criteria:
+            max_value = max(alt.values[crit.name] for alt in alternatives)
+            min_value = min(alt.values[crit.name] for alt in alternatives)
+            for alt in alternatives:
+                alt.values[crit.name] = (alt.values[crit.name] - min_value) / (max_value - min_value) if max_value != min_value else 0
+        return self
+    def normalise_sum(self):
+        """This method will normalise following the formula v/sum(V)"""
+        alternatives = self.set_to_maximise().alternatives
+        
+    
     
 if __name__ == "__main__":
     # Filter the non-numeric, non-bare_minimum values from the criteria
