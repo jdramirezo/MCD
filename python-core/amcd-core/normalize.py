@@ -43,6 +43,16 @@ class NormalisedData:
                     alt.values[crit.name] = max_value - alt.values[crit.name]
         return self
     
+    def scale_to_number(self, number: float = 100.0):
+        """This method will scale the values to a given number"""
+        alternatives = self.set_to_maximise().alternatives
+        for crit in self.criteria:
+            values = [alt.values[crit.name] for alt in alternatives]
+            max_value = max(values)
+            for alt in alternatives:
+                alt.values[crit.name] = ((alt.values[crit.name] * number) / (max_value)) if max_value != 0 else 0
+        return self
+    
     def normalise_max(self):
         """This method will normalise the values of all the alternatives following the formula: (v/max(V))"""
         alternatives = self.set_to_maximise().alternatives
