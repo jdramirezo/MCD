@@ -2,7 +2,7 @@ from domain import Critere, Alternative
 from loadData import load_criteria, load_alternatives
 from dataclasses import dataclass
 from pathlib import Path
-import csv
+import json
 
 
 def format_markdown_table(alternatives: list[Alternative], criteria: list[Critere]) -> str:
@@ -27,7 +27,39 @@ def format_markdown_table(alternatives: list[Alternative], criteria: list[Criter
     table_lines.extend("| " + " | ".join(row) + " |" for row in rows)
     return "\n".join(table_lines)
 
-
+def write_list_of_alternatives_to_json(alternatives: list[Alternative], criteria: list[Critere], filename: str):
+    """This function will take a list of alternatives and save it to a json file."""
+    data = []
+    for alt in alternatives:
+        alt_data = {"name": alt.name}
+        for crit in criteria:
+            alt_data[crit.name] = alt.values.get(crit.name, None)
+        data.append(alt_data)
+    with open(filename, 'w') as f:
+        json.dump(data, f, indent=4)
+    
+def save_normalised_data(alternatives: list[Alternative], criteria: list[Critere]):
+    """This function will take a list of alternatives and criteria and save the normalised version on a separate file."""
+    normal_data = NormalisedData(alternatives, criteria)
+    # Create folder if it doesn't exist
+    output_folder = Path("test/normalised_data")
+    output_folder.mkdir(exist_ok=True)
+    # Save "set to max" and "scaled" data to a json file
+    file = output_folder / "set_to_max_scaled.json"
+    write_list_of_alternatives_to_json(normal_data.scale_to_number().alternatives, criteria, file)
+    # Save "normalised max" data to a json file
+    file = output_folder / "normalised_max.json"
+    write_list_of_alternatives_to_json(normal_data.normalise_max().alternatives, criteria, file)
+    # Save "normalised max-min" data to a csv file
+    file = output_folder / "normalised_max_min.json"
+    write_list_of_alternatives_to_json(normal_data.normalise_max_min().alternatives, criteria, file)
+    # Save "normalised sum" data to a json file
+    file = output_folder / "normalised_sum.json"
+    write_list_of_alternatives_to_json(normal_data.normalise_sum().alternatives, criteria, file)
+    # Save "normalised vector" data to a json file
+    file = output_folder / "normalised_vector.json"
+    write_list_of_alternatives_to_json(normal_data.normalise_vector().alternatives, criteria, file)
+    print(f"-----Normalised data saved to {output_folder}----")
 @dataclass
 class NormalisedData:
     """This class represents the normalised data for the alternatives and criteria."""
@@ -95,12 +127,4 @@ if __name__ == "__main__":
     # Filter the non-numeric, non-bare_minimum values from the criteria
     criteria = [crit for crit in load_criteria(Path(f"test/criteria.json")) if crit.type == "numeric" and crit.weight > 0 ]
     alternatives = [alt for alt in load_alternatives(Path(f"test/alternatives.csv")) if all(isinstance(alt.values[crit.name], (int, float)) for crit in criteria)]
-    normalised_data = NormalisedData(alternatives, criteria)
-    
-    print("data set to maximise:")
-    normalised_data.set_to_maximise()
-    print(format_markdown_table(normalised_data.alternatives, normalised_data.criteria))
-    
-    print("Normalised data (table):")
-    normalised_data.normalise_max()
-    print(format_markdown_table(normalised_data.alternatives, criteria))
+    save_normalised_data(alternatives, criteria)
