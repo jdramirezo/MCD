@@ -14,10 +14,17 @@ def calculate_mean(alternatives: list[Alternative], criteria: list[Critere]) -> 
     return means
 
 if __name__ == "__main__":
-    criteria = [crit for crit in load_criteria(Path(f"test/criteria.json")) if crit.type == "numeric" and crit.weight > 0 ]
-    alternatives = [alt for alt in load_alternatives(Path(f"test/alternatives.csv")) if all(isinstance(alt.values[crit.name], (int, float)) for crit in criteria)]
-    normalised_data = NormalisedData(alternatives, criteria).scale_to_number.normalise_max_min()
-    means = calculate_mean(alternatives, criteria)
-    print("Mean values for each alternative:")
-    for alt_name, mean in means.items():
+    # weighting methods used a scaled ans normalized version of the data, so we need to load the normalised data instead of the original data
+    
+    criteria = load_criteria(Path(f"test/criteria.json"))
+    alternatives = load_alternatives(Path(f"test/normalised_data/set_to_max_scaled.json"))
+    
+    # we start with set to max scaled data
+    
+    alternatives_max = load_alternatives(Path(f"test/normalised_data/normalised_max.json"))
+    mean_max = calculate_mean(alternatives_max, criteria)
+    print("Mean values for normalised max data:")
+    for alt_name, mean in mean_max.items():
         print(f"{alt_name}: {mean}")
+        
+    

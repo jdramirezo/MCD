@@ -1,4 +1,4 @@
-Name,Minimum Wage (€/hour),Debt (% of GDP),Inflation Rate (%),GDP per Capita (€),Government Deficit/Surplus (% of GDP),Electricity Prices (€/MWh),Tax Burden (% of GDP),"Homicide Rate (per 100,000 inhabitants)",Education Level (% with upper secondary education),Citizen Satisfaction,Life Expectancy (years),Religion,Language,Dominant Hair Color,Corruption Perception Index,Number of Holidays
+name,Minimum Wage (€/hour),Debt (% of GDP),Inflation Rate (%),GDP per Capita (€),Government Deficit/Surplus (% of GDP),Electricity Prices (€/MWh),Tax Burden (% of GDP),"Homicide Rate (per 100,000 inhabitants)",Education Level (% with upper secondary education),Citizen Satisfaction,Life Expectancy (years),Religion,Language,Dominant Hair Color,Corruption Perception Index,Number of Holidays
 France,11.88,109.9,5.7,33750,5.5,251.3,45.2,1.2,82.00,1,82,Christianity (Roman Catholicism),French,25,60,11
 Canada,15.75,66.3,3.4,53371,3.9,120,33,1.8,91.00,3,82,Christianity (Roman Catholicism and Protestantism),English and French,25,6,10
 Belgium,12.57,103.1,2.3,37310,4.2,377.2,44.6,1.7,82.00,3,82,Christianity (Roman Catholicism),"Dutch, French, German",25,6,10

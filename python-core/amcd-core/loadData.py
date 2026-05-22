@@ -30,7 +30,7 @@ def load_alternatives(file: Path) -> list[Alternative]:
         reader = csv.DictReader(f)
         for row in reader:
             alt = Alternative(
-                name=row['Name'],
+                name=row['name'],
                 values={k: float(v) if v.replace('.','',1).isdigit() else v for k, v in row.items() if k != 'Name'}
             )
             alternatives.append(alt)
