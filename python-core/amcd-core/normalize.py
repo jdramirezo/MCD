@@ -60,6 +60,7 @@ def save_normalised_data(alternatives: list[Alternative], criteria: list[Critere
     file = output_folder / "normalised_vector.json"
     write_list_of_alternatives_to_json(normal_data.normalise_vector().alternatives, criteria, file)
     print(f"-----Normalised data saved to {output_folder}----")
+    
 @dataclass
 class NormalisedData:
     """This class represents the normalised data for the alternatives and criteria."""
