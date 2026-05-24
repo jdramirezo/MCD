@@ -1,0 +1,28 @@
+{
+    "Scenarios": [
+        {
+            "description": "All the families will have the same weight",
+            "name": "equal_weights",
+            "weights": {
+                "economic": 0.5,
+                "life": 0.5
+            }
+        },
+        {
+            "description": "The economic family will have a higher weight than the life family",
+            "name": "economic_higher_weight",
+            "weights": {
+                "economic": 0.7,
+                "life": 0.3
+            }
+        },
+        {
+            "description": "The life family will have a higher weight than the economic family",
+            "name": "life_higher_weight",
+            "weights": {
+                "economic": 0.3,
+                "life": 0.7
+            }
+        }
+    ]
+}         

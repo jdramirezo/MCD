@@ -79,7 +79,7 @@
             "weight": 1,
             "threshold": 0,
             "bare_minimum": null,
-            "family": "social"
+            "family": "life"
         },
         {"name": "Citizen Satisfaction",
             "direction": "max",
@@ -132,6 +132,15 @@
             "description": "Dominant hair color among population (Blonde, Brown, Dark Brown).",
             "type": "numeric",
             "weight": 1,
+            "threshold": null,
+            "bare_minimum": null,
+            "family": "life"
+        },
+        {"name": "Religion",
+            "direction": "max",
+            "description": "Dominant religion in the country.",
+            "type": "ordinal",
+            "weight": 0,
             "threshold": null,
             "bare_minimum": null,
             "family": "life"

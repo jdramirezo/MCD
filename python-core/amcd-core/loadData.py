@@ -36,6 +36,18 @@ def load_alternatives(file: Path) -> list[Alternative]:
             alternatives.append(alt)
     return alternatives
 
+def load_scenarios(file: Path) -> list[Scenario]:
+    with open(file, 'r') as f:
+        data = json.load(f)
+    scenarios_list = []
+    for item in data['Scenarios']:
+        scenario = Scenario(
+            name=item['name'],
+            weights=item['weights']
+        )
+        scenarios_list.append(scenario)
+    return scenarios_list
+
 if __name__ == "__main__":
     criteria = load_criteria(Path("test/criteria.json"))
     print("\nLoaded Criteria:")

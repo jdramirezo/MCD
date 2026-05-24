@@ -32,7 +32,7 @@ def write_list_of_alternatives_to_csv(alternatives: list[Alternative], criteria:
     """This function will take a list of alternatives and save it to a csv file."""
     with open(filename, 'w', newline='') as f:
         writer = csv.writer(f)
-        writer.writerow(["Alternative", *[criterion.name for criterion in criteria]])
+        writer.writerow(["name", *[criterion.name for criterion in criteria]])
         for alternative in alternatives:
             row = [alternative.name] + [alternative.values.get(criterion.name, "") for criterion in criteria]
             writer.writerow(row)
