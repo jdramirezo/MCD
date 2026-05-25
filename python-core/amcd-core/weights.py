@@ -1,6 +1,7 @@
+import pandas as pd
+
 from loadData import load_criteria, load_alternatives, load_scenarios
 from domain import Critere, Alternative, Direction, Scenario
-from normalize import NormalisedData
 from pathlib import Path
 
 def calculate_mean(alternatives: list[Alternative], criteria: list[Critere], scenario: Scenario) -> dict[str, float]:
@@ -36,9 +37,7 @@ if __name__ == "__main__":
     
     alternatives_max = load_alternatives(Path(f"test/normalised_data/normalised_max.csv"))
     alternatives_max_min = load_alternatives(Path(f"test/normalised_data/normalised_max_min.csv"))
-    result = calculate_multiple_means([(alternatives_max, "normalised_max"), (alternatives_max_min, "normalised_max_min")], criteria, scenarios)
-    for r in result:
-        print(f"Results for {r}:")
-        for alt, mean in result[r].items():
-            print(f"{alt}: {mean:.4f}")
-    
+    alternatives_sum = load_alternatives(Path(f"test/normalised_data/normalised_sum.csv"))
+    alternatives_vector = load_alternatives(Path(f"test/normalised_data/normalised_vector.csv"))
+    result = calculate_multiple_means([(alternatives_max, "normalised_max"), (alternatives_max_min, "normalised_max_min"), (alternatives_sum, "normalised_sum"), (alternatives_vector, "normalised_vector")], criteria, scenarios)
+    print(pd.DataFrame(result))
