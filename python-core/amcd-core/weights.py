@@ -1,3 +1,5 @@
+import argparse
+
 import pandas as pd
 
 from loadData import load_criteria, load_alternatives, load_scenarios
@@ -28,20 +30,42 @@ def calculate_multiple_means(alternatives_list: list[tuple[list[Alternative], st
         for alternatives, name in alternatives_list:
             means[scenario.name][name] = calculate_mean(alternatives, criteria, scenario)
     return means
-    
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Run dominance analysis for MCDA alternatives."
+    )
+    parser.add_argument("--normalised_data", type=Path, default=None, help="Path to save the satisfaction analysis results as a CSV file.")
+    parser.add_argument("--criteria", type=Path, default=Path("test/criteria.json"))
+    parser.add_argument("--alternatives", type=Path, default=Path("test/alternatives.csv"))
+    parser.add_argument("--output", type=Path, default=None)
+    parser.add_argument("--scenarios", type=Path, default=Path("test/scenarios.json"))
+    return parser.parse_args()
 
 if __name__ == "__main__":
     # weighting methods used a scaled ans normalized version of the data, so we need to load the normalised data instead of the original data
     
-    criteria = load_criteria(Path(f"test/criteria.json"))
+    args = parse_args()
     
-    scenarios = load_scenarios(Path(f"test/scenarios.json"))
+    criteria = load_criteria(args.criteria)
+    alternatives = load_alternatives(args.alternatives)
+    scenarios = load_scenarios(args.scenarios)
     
-    alternatives_max = load_alternatives(Path(f"test/normalised_data/normalised_max.csv"))
-    alternatives_max_min = load_alternatives(Path(f"test/normalised_data/normalised_max_min.csv"))
-    alternatives_sum = load_alternatives(Path(f"test/normalised_data/normalised_sum.csv"))
-    alternatives_vector = load_alternatives(Path(f"test/normalised_data/normalised_vector.csv"))
+    alternatives_max = load_alternatives(Path(args.normalised_data / "normalised_max.csv"))
+    alternatives_max_min = load_alternatives(Path(args.normalised_data / "normalised_max_min.csv"))
+    alternatives_sum = load_alternatives(Path(args.normalised_data / "normalised_sum.csv"))
+    alternatives_vector = load_alternatives(Path(args.normalised_data / "normalised_vector.csv"))
+
     result = calculate_multiple_means([(alternatives_max, "normalised_max"), (alternatives_max_min, "normalised_max_min"), (alternatives_sum, "normalised_sum"), (alternatives_vector, "normalised_vector")], criteria, scenarios)
     for scenario_name, means in result.items():
         print(f"Scenario: {scenario_name} : description: {next(scen.description for scen in scenarios if scen.name == scenario_name)}")
         print(pd.DataFrame(means))
+    if args.output is not None:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        with open(args.output, 'w') as f:
+            for scenario_name, means in result.items():
+                f.write(f"Scenario: {scenario_name} : description: {next(scen.description for scen in scenarios if scen.name == scenario_name)}\n")
+                df = pd.DataFrame(means)
+                df.to_csv(f, index=False)
+                f.write("\n")
+        print(f"Mean values saved to {args.output}")
