@@ -95,7 +95,7 @@
             "description": "Average life expectancy in years.",
             "type": "numeric",
             "weight": 1,
-            "threshold": 3,
+            "threshold": null,
             "bare_minimum": 80,
             "family": "life"
         },
@@ -113,7 +113,7 @@
             "description": "Number of public holidays per year.",
             "type": "numeric",
             "weight": 1,
-            "threshold": 1,
+            "threshold": null,
             "bare_minimum": null,
             "family": "life"
         },

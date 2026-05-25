@@ -1,5 +1,5 @@
 from domain import Critere, Alternative, Direction
-from loadData import load_criteria, load_alternatives
+from loadData import load_criteria, load_alternatives, load_scenarios
 from pathlib import Path
 import csv
 from copy import deepcopy
@@ -76,10 +76,8 @@ def normalise_sum(alternatives: list[Alternative], criteria: list[Critere]) -> l
 def normalise_vector(alternatives: list[Alternative], criteria: list[Critere]) -> list[Alternative]:
     """Normalise following the formula: v/sqrt(sum(V^2))"""
     result = deepcopy(alternatives)
-    print(f"Alternative {pd.DataFrame([alt.values for alt in result], index=[alt.name for alt in result])}") # DEBUGGING
     for crit in criteria:
         sum_squares = sum(alt.values[crit.name] ** 2 for alt in result)
-        print(f"Sum of squares for criterion {crit.name}: {sum_squares}") # DEBUGGING
         norm = sum_squares ** 0.5
         for alt in result:
             if crit.direction == Direction.MAX:
@@ -87,6 +85,23 @@ def normalise_vector(alternatives: list[Alternative], criteria: list[Critere]) -
             else:
                 alt.values[crit.name] = (1 - alt.values[crit.name] / norm) * 100 if norm != 0 else 0
     return result
+
+def normalise_for_electra(alternatives: list[Alternative], criteria: list[Critere]) -> list[Alternative]:
+    """Normalise the values of the alternatives for the ELECTRE method, considering the thresholds of the criteria."""
+    result = deepcopy(alternatives)
+    for crit in criteria:
+        threshold = getattr(crit, 'threshold', None)
+        max_value = max(alt.values[crit.name] for alt in result)
+        if crit.direction == Direction.MIN:
+            for alt in result:
+                alt.values[crit.name] = max_value - alt.values.get(crit.name, 0)
+        for alt in result:
+            if threshold is None or threshold == 0:
+                alt.values[crit.name] = alt.values.get(crit.name, 0)*10
+            else: 
+                alt.values[crit.name] = alt.values.get(crit.name, 0)/threshold
+    return result
+        
 
 def save_normalised_data(alternatives: list[Alternative], criteria: list[Critere]):
     """This function will take a list of alternatives and criteria and save the normalised version on a separate file."""
@@ -109,6 +124,12 @@ def save_normalised_data(alternatives: list[Alternative], criteria: list[Critere
     # Save "normalised vector" data to a csv file
     file = output_folder / "normalised_vector.csv"
     write_list_of_alternatives_to_csv(normalise_vector(deepcopy(alternatives), criteria), criteria, file)
+    
+    # Save "normalised for ELECTRE" data to a csv file
+    scenarios = load_scenarios(Path(f"test/scenarios.json"))
+    for scenario in scenarios:
+        file = output_folder / f"normalised_electre_{scenario.name}.csv"
+        write_list_of_alternatives_to_csv(normalise_for_electra(deepcopy(alternatives), criteria,), criteria, file)
     
     print(f" /n -----Normalised data saved to {output_folder}---- /n ")
         
