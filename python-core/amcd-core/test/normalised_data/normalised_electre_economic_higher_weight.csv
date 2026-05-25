@@ -1,0 +1,7 @@
+name,Minimum Wage (€/hour),Debt (% of GDP),Inflation Rate (%),GDP per Capita (€),Government Deficit/Surplus (% of GDP),Electricity Prices (€/MWh),Tax Burden (% of GDP),"Homicide Rate (per 100,000 inhabitants)",Education Level (% with upper secondary education),Citizen Satisfaction,Life Expectancy (years),Number of Holidays,Dominant Hair Color
+Canada,15.75,0.0,1.2500000000000002,10.6742,0.0,12.73,2.2,0.0,910.0,30.0,820.0,100.0,250.0
+Norway,15.0,2.63,0.050000000000000266,14.43,0.0,12.675,1.2,13.0,820.0,40.0,830.0,120.0,1000.0
+Luxembourg,18.28,4.08,1.5000000000000002,16.664,32.0,9.185,1.0,15.0,820.0,40.0,820.0,100.0,0.0
+Switzerland,26.05,2.4299999999999997,1.8000000000000003,12.774,29.0,11.23,3.1,13.0,860.0,40.0,830.0,70.0,250.0
+Sweden,16.38,3.4799999999999995,0.0,8.924,33.0,9.38,0.0,7.0,870.0,40.0,820.0,130.0,1000.0
+Ireland,13.5,1.7,0.3500000000000001,14.34,24.0,0.0,4.2,9.0,820.0,30.0,820.0,90.0,250.0

@@ -1,4 +1,7 @@
-from domain import Critere, Alternative, Direction
+import argparse
+from email import parser
+
+from domain import Critere, Alternative, Direction, Scenario
 from loadData import load_criteria, load_alternatives, load_scenarios
 from pathlib import Path
 import csv
@@ -102,11 +105,9 @@ def normalise_for_electra(alternatives: list[Alternative], criteria: list[Criter
                 alt.values[crit.name] = alt.values.get(crit.name, 0)/threshold
     return result
         
-
-def save_normalised_data(alternatives: list[Alternative], criteria: list[Critere]):
+def save_normalised_data(alternatives: list[Alternative], criteria: list[Critere], output_folder: Path, scenarios: list[Scenario]):
     """This function will take a list of alternatives and criteria and save the normalised version on a separate file."""
     # Create folder if it doesn't exist
-    output_folder = Path("test/normalised_data")
     output_folder.mkdir(exist_ok=True)
     
     # Save "normalised max" data to a csv file
@@ -126,19 +127,48 @@ def save_normalised_data(alternatives: list[Alternative], criteria: list[Critere
     write_list_of_alternatives_to_csv(normalise_vector(deepcopy(alternatives), criteria), criteria, file)
     
     # Save "normalised for ELECTRE" data to a csv file
-    scenarios = load_scenarios(Path(f"test/scenarios.json"))
     for scenario in scenarios:
         file = output_folder / f"normalised_electre_{scenario.name}.csv"
         write_list_of_alternatives_to_csv(normalise_for_electra(deepcopy(alternatives), criteria,), criteria, file)
     
     print(f" /n -----Normalised data saved to {output_folder}---- /n ")
         
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Run dominance analysis for MCDA alternatives."
+    )
+    parser.add_argument("--dominance_output", type=Path, default=None, help="Path to save the satisfaction analysis results as a CSV file.")
+    parser.add_argument("--criteria", type=Path, default=Path("test/criteria.json"))
+    parser.add_argument("--alternatives", type=Path, default=Path("test/alternatives.csv"))
+    parser.add_argument("--output", type=Path, default=None)
+    parser.add_argument("--scenarios", type=Path, default=Path("test/scenarios.json"))
+    return parser.parse_args()
 
 if __name__ == "__main__":
-    # Filter the non-numeric, non-bare_minimum values from the criteria
-    countries = ['Canada', 'Norway', 'Luxembourg', 'Switzerland', 'Sweden', 'Ireland']
-    criteria = [crit for crit in load_criteria(Path(f"test/criteria.json")) if crit.type == "numeric" and crit.weight > 0 ]
-    alternatives = [alt for alt in load_alternatives(Path(f"test/alternatives.csv")) if all(isinstance(alt.values[crit.name], (int, float)) and alt.name in countries for crit in criteria)]
     
-    save_normalised_data(alternatives, criteria)
+    args = parse_args()
+    criteria = load_criteria(args.criteria)
+    alternatives = load_alternatives(args.alternatives)
+    
+    criteria = [
+        crit for crit in criteria
+        if crit.type == "numeric"
+        and crit.weight > 0
+    ]
+    
+    domination_alts = args.dominance_output
+    # read the retained alt from the satisfaction analysis if the file exists
+    if domination_alts is not None:
+        retained_alts = pd.read_csv(domination_alts)['name'].tolist()
+    else:
+        retained_alts = [alt.name for alt in alternatives]
+    
+    alternatives = [
+        alt for alt in alternatives
+        if all(isinstance(alt.values[crit.name], 
+                          (int, float)) for crit in criteria)
+        and alt.name in retained_alts
+    ]
+    scenarios = load_scenarios(args.scenarios)
+    save_normalised_data(alternatives, criteria, args.output, scenarios)
     
