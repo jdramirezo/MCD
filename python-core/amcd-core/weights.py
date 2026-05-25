@@ -23,8 +23,10 @@ def calculate_mean(alternatives: list[Alternative], criteria: list[Critere], sce
 def calculate_multiple_means(alternatives_list: list[tuple[list[Alternative], str]], criteria: list[Critere], scenarios: list[Scenario]) -> dict[str, dict[str, float]]:
     """Calculate the mean value for each list of alternatives."""
     means  = {}
-    for alternatives, name in alternatives_list:
-        means[name] = calculate_mean(alternatives, criteria, scenarios[0])# Assuming the first scenario is used
+    for scenario in scenarios:
+        means[scenario.name] = {}    
+        for alternatives, name in alternatives_list:
+            means[scenario.name][name] = calculate_mean(alternatives, criteria, scenario)
     return means
     
 
@@ -40,4 +42,6 @@ if __name__ == "__main__":
     alternatives_sum = load_alternatives(Path(f"test/normalised_data/normalised_sum.csv"))
     alternatives_vector = load_alternatives(Path(f"test/normalised_data/normalised_vector.csv"))
     result = calculate_multiple_means([(alternatives_max, "normalised_max"), (alternatives_max_min, "normalised_max_min"), (alternatives_sum, "normalised_sum"), (alternatives_vector, "normalised_vector")], criteria, scenarios)
-    print(pd.DataFrame(result))
+    for scenario_name, means in result.items():
+        print(f"Scenario: {scenario_name} : description: {next(scen.description for scen in scenarios if scen.name == scenario_name)}")
+        print(pd.DataFrame(means))

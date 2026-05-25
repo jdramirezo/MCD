@@ -43,6 +43,7 @@ def load_scenarios(file: Path) -> list[Scenario]:
     for item in data['Scenarios']:
         scenario = Scenario(
             name=item['name'],
+            description=item['description'],
             weights=item['weights']
         )
         scenarios_list.append(scenario)

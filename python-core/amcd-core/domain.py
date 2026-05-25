@@ -28,4 +28,5 @@ class Alternative:
 @dataclass
 class Scenario:
     name: "str"
+    description: "str"
     weights: dict[str, float]
