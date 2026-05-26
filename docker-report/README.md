@@ -5,7 +5,7 @@ Generated inside Docker.
 ## Parameters
 
 - Family: `pere_de_famille`
-- ELECTRE threshold: `0.7`
+- ELECTRE threshold: `0.8`
 - Criteria file: `/app/input/criteria.json`
 - Alternatives file: `/app/input/alternatives.csv`
 - Scenarios file: `/app/input/scenarios.json`

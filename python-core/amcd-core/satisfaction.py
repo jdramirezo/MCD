@@ -46,18 +46,23 @@ def print_results(results):
         print(alt)
     return sorted_results, eliminated_alternatives
 
-def write_results_to_csv(results, output_file: Path):
+def write_results_to_csv(retained_alternatives, eliminated_alternatives, output_file: Path):
+    """Write satisfaction results to CSV with separate columns for retained and eliminated alternatives."""
     output_file.parent.mkdir(parents=True, exist_ok=True)
-
+    
+    # Extract names from retained_alternatives (which are tuples of (name, satisfaction_array))
+    retained_names = [alt[0] for alt in retained_alternatives]
+    
+    # Pad lists to equal length to avoid data loss
+    max_len = max(len(retained_names), len(eliminated_alternatives))
+    retained_names_padded = retained_names + [''] * (max_len - len(retained_names))
+    eliminated_padded = eliminated_alternatives + [''] * (max_len - len(eliminated_alternatives))
+    
     with open(output_file, "w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["alternative", "satisfaction_score"])
-
-        for alt_name, satisfaction in results:
-            writer.writerow([
-                alt_name,
-                int(sum(satisfaction)),
-            ])
+        writer.writerow(["alternative", "eliminated"])
+        for retained, eliminated in zip(retained_names_padded, eliminated_padded):
+            writer.writerow([retained, eliminated])
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -92,5 +97,5 @@ if __name__ == "__main__":
     matrix, results = satisfaction_matrix(alternatives, criteria)
     sorted_results, eliminated_alternatives = print_results(results)
     if args.output:
-        write_results_to_csv(sorted_results, args.output)
+        write_results_to_csv(sorted_results, eliminated_alternatives, args.output)
         print(f"\nSaved satisfaction results to {args.output}")

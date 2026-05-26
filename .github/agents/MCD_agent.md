@@ -232,13 +232,8 @@ Use `satisfaction.csv` and the original alternatives file to show:
 
 - Retained alternatives.
 - Eliminated alternatives.
-- Why this matters for the decision process.
+- Why this matters for the decision process. explain the importance of the bare minimum requirements and how they reflect essential criteria that must be met for any alternative to be considered viable.
 
-If the file only lists retained alternatives, compute eliminated alternatives as:
-
-```text
-all original alternatives - retained alternatives
-```
 
 ### Dominance Analysis
 
