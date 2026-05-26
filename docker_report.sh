@@ -16,7 +16,7 @@ INPUT_CONFIG_FILE="$PROJECT_ROOT/docker_report.inputs"
 # Default parameters
 OUTPUT_DIR="$PROJECT_ROOT/docker-report"
 FAMILY="economic"
-THRESHOLD="0.5"
+THRESHOLD="0.7"
 NO_CACHE="false"
 KEEP_IMAGE="false"
 PIP_CONFIG_FILE="${PIP_CONFIG_FILE:-}"

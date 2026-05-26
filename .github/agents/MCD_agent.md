@@ -36,6 +36,24 @@ Run the workflow from the repository root:
 If the user gives another input config or output directory, use that instead.
 If Docker fails, stop and report the failure clearly. Do not invent results.
 
+here are the inputs that docker accepts, but they are not required for the report generation. If they are present, use them to enrich the report. If they are missing, mention that in the report and continue with the available artifacts.
+
+Usage: ./docker_report.sh [options]
+```
+Options:
+  -o, --output DIR       Folder where report files are written (default: ./docker-report)
+  -c, --input-config FILE
+                         File defining CRITERIA_FILE, ALTERNATIVES_FILE, and SCENARIOS_FILE
+                         (default: ./docker_report.inputs)
+  -f, --family FAMILY    Criteria family for satisfaction/dominance (default: economic)
+                         Repeat or quote values for multiple families, e.g. "economic life"
+  -t, --threshold VALUE  ELECTRE concordance threshold (default: 0.5)
+      --pip-config FILE  Pip config to use during Docker build (pip.conf or pip.ini)
+      --no-cache         Build the Docker image without cache
+      --keep-image       Do not remove the generated Docker image at the end
+  -h, --help             Show this help
+```
+
 ## Prompts To Use With This Agent
 
 Use one of these prompts when invoking the agent.
