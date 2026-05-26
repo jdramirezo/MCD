@@ -1,0 +1,6 @@
+# AMCD Docker report inputs.
+# Paths can be absolute or relative to this file.
+
+CRITERIA_FILE="exemples/countries/criteria.json"
+ALTERNATIVES_FILE="exemples/countries/alternatives.csv"
+SCENARIOS_FILE="exemples/countries/scenarios.json"

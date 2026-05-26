@@ -4,12 +4,14 @@ set -euo pipefail
 # Get the directory of this script
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 PROJECT_ROOT="$SCRIPT_DIR"
-PYTHON_CORE="$PROJECT_ROOT/python-core"
-AMCD_CORE="$PYTHON_CORE/amcd-core"
+AMCD_CORE="$PROJECT_ROOT/python-core/amcd-core"
 
 # Docker image settings
 IMAGE_NAME="amcd-report"
 IMAGE_TAG="latest"
+
+# Input config setting
+INPUT_CONFIG_FILE="$PROJECT_ROOT/docker_report.inputs"
 
 # Default parameters
 OUTPUT_DIR="$PROJECT_ROOT/docker-report"
@@ -28,6 +30,9 @@ Usage: ./docker_report.sh [options]
 
 Options:
   -o, --output DIR       Folder where report files are written (default: ./docker-report)
+  -c, --input-config FILE
+                         File defining CRITERIA_FILE, ALTERNATIVES_FILE, and SCENARIOS_FILE
+                         (default: ./docker_report.inputs)
   -f, --family FAMILY    Criteria family for satisfaction/dominance (default: economic)
                          Repeat or quote values for multiple families, e.g. "economic life"
   -t, --threshold VALUE  ELECTRE concordance threshold (default: 0.5)
@@ -36,8 +41,13 @@ Options:
       --keep-image       Do not remove the generated Docker image at the end
   -h, --help             Show this help
 
+Data files:
+  Edit ./docker_report.inputs, or pass --input-config FILE.
+  Paths can be absolute or relative to the input config file.
+
 Examples:
   ./docker_report.sh
+  ./docker_report.sh --input-config ./my_study.inputs
   ./docker_report.sh --family "economic life" --threshold 0.6
   ./docker_report.sh --output ./reports/amcd
     ./docker_report.sh --pip-config ~/.config/pip/pip.conf
@@ -49,6 +59,10 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         -o|--output)
             OUTPUT_DIR="$2"
+            shift 2
+            ;;
+        -c|--input-config)
+            INPUT_CONFIG_FILE="$2"
             shift 2
             ;;
         -f|--family)
@@ -129,6 +143,62 @@ find_pip_config() {
     return 1
 }
 
+# Resolve a configured file path. Relative paths are read relative to the
+# external input config file, not the current shell directory.
+resolve_configured_file() {
+    local variable_name="$1"
+    local base_dir="$2"
+    local configured_path="${!variable_name-}"
+    local candidate
+    local dir
+    local name
+
+    if [[ -z "$configured_path" ]]; then
+        echo "❌ $variable_name is not set in $INPUT_CONFIG_FILE"
+        exit 1
+    fi
+
+    if [[ "$configured_path" == /* ]]; then
+        candidate="$configured_path"
+    else
+        candidate="$base_dir/$configured_path"
+    fi
+
+    if [[ ! -f "$candidate" ]]; then
+        echo "❌ $variable_name file not found: $candidate"
+        exit 1
+    fi
+
+    dir=$(cd -- "$(dirname -- "$candidate")" && pwd)
+    name=$(basename -- "$candidate")
+    printf -v "$variable_name" '%s/%s' "$dir" "$name"
+}
+
+load_input_config() {
+    local config_candidate="$INPUT_CONFIG_FILE"
+    local config_dir
+
+    if [[ "$config_candidate" != /* ]]; then
+        config_candidate="$PWD/$config_candidate"
+    fi
+
+    if [[ ! -f "$config_candidate" ]]; then
+        echo "❌ Input config file not found: $config_candidate"
+        echo "   Create one from docker_report.inputs or pass --input-config FILE."
+        exit 1
+    fi
+
+    config_dir=$(cd -- "$(dirname -- "$config_candidate")" && pwd)
+    INPUT_CONFIG_FILE="$config_dir/$(basename -- "$config_candidate")"
+
+    # shellcheck source=/dev/null
+    source "$INPUT_CONFIG_FILE"
+
+    resolve_configured_file CRITERIA_FILE "$config_dir"
+    resolve_configured_file ALTERNATIVES_FILE "$config_dir"
+    resolve_configured_file SCENARIOS_FILE "$config_dir"
+}
+
 # Cleanup temp files and Docker image if needed
 cleanup() {
     if [[ -n "${TMP_DIR:-}" && -d "$TMP_DIR" ]]; then
@@ -140,11 +210,17 @@ cleanup() {
 }
 trap cleanup EXIT
 
+load_input_config
+
 # Print summary of settings
 echo "🐳 AMCD Docker Report"
 echo "====================="
 echo "> PROJECT_ROOT: $PROJECT_ROOT"
 echo "> AMCD_CORE:    $AMCD_CORE"
+echo "> INPUT_CONFIG: $INPUT_CONFIG_FILE"
+echo "> CRITERIA:     $CRITERIA_FILE"
+echo "> ALTERNATIVES: $ALTERNATIVES_FILE"
+echo "> SCENARIOS:    $SCENARIOS_FILE"
 echo "> OUTPUT_DIR:   $OUTPUT_DIR"
 echo "> FAMILY:       $FAMILY"
 echo "> THRESHOLD:    $THRESHOLD"
@@ -170,9 +246,9 @@ for required_file in \
     "$AMCD_CORE/normalize.py" \
     "$AMCD_CORE/weights.py" \
     "$AMCD_CORE/electra.py" \
-    "$AMCD_CORE/test/criteria.json" \
-    "$AMCD_CORE/test/alternatives.csv" \
-    "$AMCD_CORE/test/scenarios.json"; do
+    "$CRITERIA_FILE" \
+    "$ALTERNATIVES_FILE" \
+    "$SCENARIOS_FILE"; do
     if [[ ! -f "$required_file" ]]; then
         echo "❌ Missing required file: $required_file"
         exit 1
@@ -186,6 +262,10 @@ TMP_DIR=$(mktemp -d -t amcd-docker-report-XXXXXX)
 
 echo "✅ Preparing Docker build context"
 cp -R "$AMCD_CORE" "$TMP_DIR/amcd-core"
+mkdir -p "$TMP_DIR/input"
+cp "$CRITERIA_FILE" "$TMP_DIR/input/criteria.json"
+cp "$ALTERNATIVES_FILE" "$TMP_DIR/input/alternatives.csv"
+cp "$SCENARIOS_FILE" "$TMP_DIR/input/scenarios.json"
 
 # Find pip config if available
 if PIP_CONFIG_FILE=$(find_pip_config); then
@@ -219,6 +299,7 @@ RUN --mount=type=secret,id=pip_config,target=/etc/pip.conf \
     "seaborn"
 
 COPY amcd-core /app/amcd-core
+COPY input /app/input
 COPY run_amcd_report.sh /usr/local/bin/run_amcd_report.sh
 
 RUN chmod +x /usr/local/bin/run_amcd_report.sh
@@ -244,6 +325,7 @@ RUN pip install --no-cache-dir \
     "seaborn"
 
 COPY amcd-core /app/amcd-core
+COPY input /app/input
 COPY run_amcd_report.sh /usr/local/bin/run_amcd_report.sh
 
 RUN chmod +x /usr/local/bin/run_amcd_report.sh
@@ -260,6 +342,9 @@ set -euo pipefail
 # Read parameters from environment variables
 FAMILY=${AMCD_FAMILY:-economic}
 THRESHOLD=${AMCD_THRESHOLD:-0.5}
+: "${CRITERIA_FILE:?CRITERIA_FILE is required}"
+: "${ALTERNATIVES_FILE:?ALTERNATIVES_FILE is required}"
+: "${SCENARIOS_FILE:?SCENARIOS_FILE is required}"
 REPORT_DIR=/report
 NORMALISED_DIR="$REPORT_DIR/normalised"
 ELECTRA_DIR="$REPORT_DIR/electra"
@@ -284,7 +369,10 @@ run_step() {
 
 echo "🐍 Python: $(python --version 2>&1)"
 echo "📁 Report directory: $REPORT_DIR"
-echo "🏷️ Families: $FAMILY"
+echo "📄 Criteria file: $CRITERIA_FILE"
+echo "📄 Alternatives file: $ALTERNATIVES_FILE"
+echo "📄 Scenarios file: $SCENARIOS_FILE"
+echo "🏷️ Families for the satisfaction and dominance analysis: $FAMILY"
 echo "📏 ELECTRE threshold: $THRESHOLD"
 
 # shellcheck disable=SC2206
@@ -293,40 +381,40 @@ FAMILY_ARGS=($FAMILY)
 # Run each analysis step, outputting to the report directory
 run_step "Satisfaction analysis" \
     python satisfaction.py \
-        --criteria test/criteria.json \
-        --alternatives test/alternatives.csv \
+        --criteria "$CRITERIA_FILE" \
+        --alternatives "$ALTERNATIVES_FILE" \
         --family "${FAMILY_ARGS[@]}" \
         --output "$REPORT_DIR/satisfaction.csv"
 
 run_step "Dominance analysis" \
     python dominance.py \
         --satisfaction_output "$REPORT_DIR/satisfaction.csv" \
-        --criteria test/criteria.json \
-        --alternatives test/alternatives.csv \
+        --criteria "$CRITERIA_FILE" \
+        --alternatives "$ALTERNATIVES_FILE" \
         --family "${FAMILY_ARGS[@]}" \
         --output "$REPORT_DIR/dominance.csv"
 
 run_step "Normalisation" \
     python normalize.py \
         --dominance_output "$REPORT_DIR/dominance.csv" \
-        --criteria test/criteria.json \
-        --alternatives test/alternatives.csv \
-        --scenarios test/scenarios.json \
+        --criteria "$CRITERIA_FILE" \
+        --alternatives "$ALTERNATIVES_FILE" \
+        --scenarios "$SCENARIOS_FILE" \
         --output "$NORMALISED_DIR"
 
 run_step "Weighted means" \
     python weights.py \
         --normalised_data "$NORMALISED_DIR" \
-        --criteria test/criteria.json \
-        --alternatives test/alternatives.csv \
-        --scenarios test/scenarios.json \
+        --criteria "$CRITERIA_FILE" \
+        --alternatives "$ALTERNATIVES_FILE" \
+        --scenarios "$SCENARIOS_FILE" \
         --output "$REPORT_DIR/weights_results.csv"
 
 run_step "ELECTRE analysis" \
     python electra.py \
         --normalised_data "$NORMALISED_DIR" \
-        --criteria test/criteria.json \
-        --scenarios test/scenarios.json \
+        --criteria "$CRITERIA_FILE" \
+        --scenarios "$SCENARIOS_FILE" \
         --threshold "$THRESHOLD" \
         --output "$ELECTRA_DIR"
 
@@ -340,6 +428,9 @@ Generated inside Docker.
 
 - Family: \`$FAMILY\`
 - ELECTRE threshold: \`$THRESHOLD\`
+- Criteria file: \`$CRITERIA_FILE\`
+- Alternatives file: \`$ALTERNATIVES_FILE\`
+- Scenarios file: \`$SCENARIOS_FILE\`
 
 ## Files
 
@@ -380,6 +471,9 @@ docker run --rm \
     --cpus=1.0 \
     -e AMCD_FAMILY="$FAMILY" \
     -e AMCD_THRESHOLD="$THRESHOLD" \
+    -e CRITERIA_FILE="/app/input/criteria.json" \
+    -e ALTERNATIVES_FILE="/app/input/alternatives.csv" \
+    -e SCENARIOS_FILE="/app/input/scenarios.json" \
     -v "$DOCKER_OUTPUT_DIR:/report" \
     "$IMAGE_NAME:$IMAGE_TAG" | tee "$OUTPUT_DIR/docker_report.log"
 
@@ -393,4 +487,4 @@ printf "│ %-20s │ %-38s │\n" "ELECTRE folder" "electra"
 echo "└──────────────────────┴────────────────────────────────────────┘"
 
 echo
-echo "✅ Done. Open $OUTPUT_DIR/README.md for the generated report index."
+echo "✅ Done. Use .github/agents/MCD_report.md to generate $OUTPUT_DIR/AMCD_report.md from these artifacts."
