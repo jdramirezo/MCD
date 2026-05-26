@@ -1,0 +1,28 @@
+{
+    "Scenarios": [
+        {
+            "description": "Equal weoights for both families, a good car is a good car, no matter if you are a dad or a FF fan",
+            "name": "equal_weights",
+            "weights": {
+                "pere de famille": 0.5,
+                "toreto": 0.5
+            }
+        },
+        {
+            "description": "A good dad always takes core of its family, a good car i s the cornerstone, so relaiable and affordable any dad might buy it no questions asked",
+            "name": "pere_de_famille_higher_weight",
+            "weights": {
+                "pere de famille": 0.7,
+                "toreto": 0.3
+            }
+        },
+        {
+            "description": "Nothing is more important than family kind of guy",
+            "name": "toreto_higher_weight",
+            "weights": {
+                "pere de famille": 0.3,
+                "toreto": 0.7
+            }
+        }
+    ]
+}

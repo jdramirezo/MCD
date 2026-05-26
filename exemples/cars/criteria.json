@@ -1,0 +1,114 @@
+{
+    "Criteria": [
+        {
+            "name": "Reliability Score (/100)",
+            "direction": "max",
+            "description": "Estimated reliability score for the model, where a higher value is better.",
+            "type": "numeric",
+            "weight": 1,
+            "threshold": 5,
+            "bare_minimum": 70,
+            "family": "pere de famille"
+        },
+        {
+            "name": "Luxury/Comfort Score (/10)",
+            "direction": "max",
+            "description": "Estimated comfort, perceived quality, and onboard equipment score.",
+            "type": "numeric",
+            "weight": 1,
+            "threshold": 1,
+            "bare_minimum": 6,
+            "family": "pere de famille"
+        },
+        {
+            "name": "Boot Volume (L)",
+            "direction": "max",
+            "description": "Approximate boot capacity in litres with the rear seats in place.",
+            "type": "numeric",
+            "weight": 1,
+            "threshold": 50,
+            "bare_minimum": 300,
+            "family": "pere de famille"
+        },
+        {
+            "name": "Safety Rating (Euro NCAP stars)",
+            "direction": "max",
+            "description": "Euro NCAP safety rating in stars, or closest published equivalent for the current generation.",
+            "type": "numeric",
+            "weight": 1,
+            "threshold": 1,
+            "bare_minimum": 4,
+            "family": "pere de famille"
+        },
+        {
+            "name": "Warranty Length (years)",
+            "direction": "max",
+            "description": "Standard new-car warranty length in years for the model or brand in France/Europe.",
+            "type": "numeric",
+            "weight": 1,
+            "threshold": 1,
+            "bare_minimum": 2,
+            "family": "pere de famille"
+        },
+        {
+            "name": "Affordability Score (/100)",
+            "direction": "max",
+            "description": "Estimated affordability score based on typical French new-car pricing, where a higher value is cheaper to buy.",
+            "type": "numeric",
+            "weight": 1,
+            "threshold": 5,
+            "bare_minimum": 55,
+            "family": "pere de famille"
+        },
+        {
+            "name": "Power (hp)",
+            "direction": "max",
+            "description": "Representative maximum power in horsepower for a common 2025 French-market version.",
+            "type": "numeric",
+            "weight": 1,
+            "threshold": 20,
+            "bare_minimum": 120,
+            "family": "toreto"
+        },
+        {
+            "name": "Torque (Nm)",
+            "direction": "max",
+            "description": "Representative maximum torque in newton-metres for a common 2025 French-market version.",
+            "type": "numeric",
+            "weight": 1,
+            "threshold": 30,
+            "bare_minimum": 180,
+            "family": "toreto"
+        },
+        {
+            "name": "0-100 km/h (s)",
+            "direction": "min",
+            "description": "Representative acceleration time from 0 to 100 km/h in seconds.",
+            "type": "numeric",
+            "weight": 1,
+            "threshold": 0.5,
+            "bare_minimum": 10,
+            "family": "toreto"
+        },
+        {
+            "name": "Top Speed (km/h)",
+            "direction": "max",
+            "description": "Representative maximum speed in km/h.",
+            "type": "numeric",
+            "weight": 1,
+            "threshold": 10,
+            "bare_minimum": 170,
+            "family": "toreto"
+        },
+        {
+            "name": "Sportiness Score (/10)",
+            "direction": "max",
+            "description": "Estimated sportiness score combining acceleration feel, chassis character, and driver appeal.",
+            "type": "numeric",
+            "weight": 1,
+            "threshold": 1,
+            "bare_minimum": 6,
+            "family": "toreto"
+        }
+    ]
+}
