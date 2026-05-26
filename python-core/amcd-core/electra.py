@@ -1,5 +1,7 @@
-import pandas as pd
+import argparse
 
+import pandas as pd
+import networkx as nx
 from loadData import load_criteria, load_alternatives, load_scenarios
 from domain import Critere, Alternative, Direction, Scenario
 from pathlib import Path
@@ -43,14 +45,13 @@ def concordance_matrix(alternatives: list[Alternative], criteria: list[Critere],
                 matrix.at[alt_a.name, alt_b.name] = concordance1
                 matrix.at[alt_b.name, alt_a.name] = concordance2
             else:
-                matrix.at[alt_a.name, alt_b.name] = None  # No self-comparison
+                matrix.at[alt_a.name, alt_b.name] = 1  # No self-comparison
 
     return matrix
 
-def heat_concordance_matrix(matrix: pd.DataFrame, scenario_name: str):
+def heat_concordance_matrix(matrix: pd.DataFrame, scenario_name: str, output_folder: Path):
     """Draw the concordance matrix using matplotlib and save as PNG."""
     # Create output folder if it doesn't exist
-    output_folder = Path("outranking graphs")
     output_folder.mkdir(exist_ok=True)
     
     plt.figure(figsize=(10, 8))
@@ -65,12 +66,11 @@ def heat_concordance_matrix(matrix: pd.DataFrame, scenario_name: str):
     print(f"Heatmap saved to {filepath}")
     plt.close()
     
-def graph_concordance_matrix(matrix: pd.DataFrame, seuil: float, scenario_name):
+def graph_concordance_matrix(matrix: pd.DataFrame, seuil: float, scenario_name, output_folder: Path):
     """Graph the concordance matrix as a directed graph and save as PNG."""
-    import networkx as nx
+    
     
     # Create output folder if it doesn't exist
-    output_folder = Path("outranking graphs")
     output_folder.mkdir(exist_ok=True)
     
     G = nx.DiGraph()
@@ -112,19 +112,51 @@ def graph_concordance_matrix(matrix: pd.DataFrame, seuil: float, scenario_name):
     plt.savefig(filepath, dpi=300, bbox_inches='tight')
     print(f"Outranking graph saved to {filepath}")
     plt.close()
-    
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Run dominance analysis for MCDA alternatives."
+    )
+    parser.add_argument("--normalised_data", type=Path, help="Path to save the satisfaction analysis results as a CSV file.")
+    parser.add_argument("--criteria", type=Path)
+    parser.add_argument("--alternatives", type=Path)
+    parser.add_argument("--output", type=Path, default=None)
+    parser.add_argument("--scenarios", type=Path)
+    parser.add_argument("--threshold", type=float)
+    return parser.parse_args()
+
 if __name__ == "__main__":
-    countries = ['Canada', 'Norway', 'Luxembourg', 'Switzerland', 'Sweden', 'Ireland']
-    criteria = [crit for crit in load_criteria(Path(f"test/criteria.json")) if crit.type == "numeric" and crit.weight > 0 ]
-    alternatives_max = [alt for alt in load_alternatives(Path(f"test/normalised_data/normalised_electre_equal_weights.csv")) if all(isinstance(alt.values[crit.name], (int, float)) and alt.name in countries for crit in criteria)]
-    scenarios = load_scenarios(Path(f"test/scenarios.json"))
     
-    concordance = concordance_matrix(alternatives_max, criteria, scenarios[0])
+    args = parse_args()
     
-    print("Concordance Matrix:")
+    criteria = load_criteria(args.criteria)
+    scenarios = load_scenarios(args.scenarios)
     
-    print(concordance)
+    # Create output folder
+    if args.output is not None:
+        args.output.mkdir(parents=True, exist_ok=True)
+        results_file = args.output / "electra_results.txt"
     
-    scenario_name = scenarios[0].name
-    heat_concordance_matrix(concordance, scenario_name)
-    graph_concordance_matrix(concordance, seuil=0.7, scenario_name=scenario_name)
+    first_scenario = True
+    for scenario in scenarios:
+        print(f"Scenario: {scenario.name} : description: {scenario.description}")
+        alternative_file = args.normalised_data / f"normalised_electre_{scenario.name}.csv"
+        alternatives = load_alternatives(alternative_file)
+        if args.output is not None:
+            # Compute concordance matrix once
+            matrix = concordance_matrix(alternatives, criteria, scenario)
+            # Write to results file (w mode for first, a mode for subsequent)
+            mode = 'w' if first_scenario else 'a'
+            with open(results_file, mode) as f:
+                f.write(f"Scenario: {scenario.name} : description: {scenario.description}\n")
+                df = pd.DataFrame(matrix)
+                df.to_csv(f, index=False)
+                f.write("\n")
+            
+            # Generate visualizations
+            heat_concordance_matrix(matrix, scenario.name, output_folder=args.output)
+            graph_concordance_matrix(matrix, seuil=args.threshold, scenario_name=scenario.name, output_folder=args.output)
+            print(f"Results saved to {args.output}")
+            first_scenario = False
+        else:
+            print("No output file specified. Skipping save.")
