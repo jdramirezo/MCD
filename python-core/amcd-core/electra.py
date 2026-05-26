@@ -99,10 +99,10 @@ def graph_concordance_matrix(matrix: pd.DataFrame, seuil: float, scenario_name, 
     pos = nx.spring_layout(G, seed=42, k=2)
     
     plt.figure(figsize=(12, 10))
-    nx.draw_networkx_nodes(G, pos, node_color='lightblue', node_size=3000)
+    nx.draw_networkx_nodes(G, pos, node_color='lightblue', node_size=30)
     nx.draw_networkx_labels(G, pos, font_size=12, font_weight='bold')
     nx.draw_networkx_edges(G, pos, edge_color='gray', width=2, arrows=True, 
-                          arrowsize=50, arrowstyle='->', connectionstyle='arc3,rad=0.1')
+                          arrowsize=70, arrowstyle='->', connectionstyle='arc3,rad=0.1')
     plt.title("Concordance Graph", fontsize=14)
     plt.axis('off')
     plt.tight_layout()

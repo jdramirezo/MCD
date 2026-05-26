@@ -65,7 +65,10 @@ if __name__ == "__main__":
         with open(args.output, 'w') as f:
             for scenario_name, means in result.items():
                 f.write(f"Scenario: {scenario_name} : description: {next(scen.description for scen in scenarios if scen.name == scenario_name)}\n")
+                #create a dataframe from the mean but place the name of the alternative as the index and the mean value as a column
                 df = pd.DataFrame(means)
+                #add a column with the name of the alternative
+                df.insert(0, 'Alternative', df.index)
                 df.to_csv(f, index=False)
                 f.write("\n")
         print(f"Mean values saved to {args.output}")

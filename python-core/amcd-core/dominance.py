@@ -27,6 +27,11 @@ def is_dominated(alt1: Alternative, alt2: Alternative, criteria: list[Critere]) 
                 better_list[criteria.index(crit)] = '<' if val2 < val1 else '>'
     # alt1 is dominated by alt2 if alt2 is better in at least one criterion and not worse in any criterion
     better_in_all = any(b == '<' or b == '=' for b in better_list) and not any(b == '>' for b in better_list)
+    #print an output of the comparison between alt1 and alt2 for each criterion
+    if better_in_all:
+        print(f"{alt1.name} is dominated by {alt2.name} based on criteria:")
+        for crit, b in zip(criteria, better_list):
+            print(f"  - {crit.name}: {b}")
     return better_in_all
 
 def find_non_dominated(alternatives: list[Alternative], criteria: list[Critere]) -> list[Alternative]:

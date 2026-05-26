@@ -1,339 +1,328 @@
-# AMCD Report: European Countries Comparison
+# AMCD Report
+
+Rapport généré le 26 mai 2026 à partir du workflow Docker AMCD.
+
+## Executive Summary - Résumé exécutif
+
+Cette étude compare 15 alternatives, ici des pays décrits dans `alternatives.csv`, selon une famille de critères économiques et une famille de critères de qualité de vie. Le workflow a été exécuté avec `docker_report_countries.inputs`, le dossier de sortie `docker-report-countries`, la famille `economic` pour les étapes de satisfaction et de dominance, et un seuil ELECTRE de `0.7`.
+
+Le filtrage de satisfaction conserve 11 alternatives et élimine France, Czech Republic, Germany et Poland. La dominance économique réduit ensuite l'ensemble à 6 alternatives non dominées: Canada, Norway, Luxembourg, Switzerland, Sweden et Ireland. Les scores pondérés placent très nettement Switzerland en tête lorsque les poids sont équilibrés ou économiques, tandis que Norway devient le premier choix lorsque la famille `life` est prioritaire. ELECTRE, avec le seuil plus exigeant de `0.7`, confirme un noyau robuste autour de Norway, Luxembourg, Switzerland et Sweden, mais ne donne pas exactement le même vainqueur que les moyennes pondérées dans tous les scénarios.
+
+La conclusion opérationnelle est donc nuancée: Switzerland est la meilleure alternative selon les scores pondérés économiques et équilibrés; Luxembourg est très solide en surclassement économique; Norway est la meilleure option lorsque les critères de vie dominent. Ireland et Canada apparaissent plus fragiles dans les graphes ELECTRE, car ils reçoivent beaucoup de surclassements.
+
+## Study Purpose - Objectif de l'étude
+
+L'objectif inféré des fichiers d'entrée est de comparer des pays selon des critères économiques, sociaux et de qualité de vie afin d'identifier les alternatives les plus attractives selon plusieurs préférences de décision. Les scénarios testent trois positions: équilibre entre économie et vie quotidienne, priorité à l'économie, priorité à la qualité de vie.
+
+La méthode AMCD appliquée ici n'essaie pas de trouver une vérité absolue. Elle sert à structurer le choix: d'abord éliminer les alternatives trop faibles selon les minimums économiques configurés, puis retirer les alternatives économiquement dominées, puis comparer les survivants avec des normalisations, des poids de scénarios et une analyse de surclassement ELECTRE.
+
+## Input Data - Données d'entrée
+
+| Élément | Valeur |
+|---|---|
+| Configuration Docker | [`../docker_report_countries.inputs`](../docker_report_countries.inputs) |
+| Fichier des critères | [`../exemples/countries/criteria.json`](../exemples/countries/criteria.json) |
+| Fichier des alternatives | [`../exemples/countries/alternatives.csv`](../exemples/countries/alternatives.csv) |
+| Fichier des scénarios | [`../exemples/countries/scenarios.json`](../exemples/countries/scenarios.json) |
+| Dossier de sortie | `docker-report-countries` |
+| Famille utilisée pour satisfaction/dominance | `economic` |
+| Seuil ELECTRE | `0.7` |
+| Alternatives initiales | 15 |
+| Critères configurés | 16 |
+| Critères économiques | 7 |
+| Critères de vie | 9 |
+| Critères utilisés dans les normalisations | 13 critères numériques à poids positif |
+
+Trois critères configurés n'ont pas d'effet direct dans les sorties normalisées et les scores: `Corruption Perception Index` a un poids `0`, `Language` a un poids `0` et un type catégoriel, et `Religion` a un poids `0`.
+
+## Criteria and Scenarios - Critères et scénarios
+
+| Critère | Famille | Sens | Poids | Minimum | Seuil |
+|---|---:|---:|---:|---:|---:|
+| Minimum Wage (€/hour) | economic | max | 1 | 15 | 1 |
+| Debt (% of GDP) | economic | min | 1 | 30 | 10 |
+| Inflation Rate (%) | economic | min | 1 | 3 | 2 |
+| GDP per Capita (€) | economic | max | 1 | 40000 | 5000 |
+| Government Deficit/Surplus (% of GDP) | economic | min | 1 | 2 | 0 |
+| Electricity Prices (€/MWh) | economic | min | 1 | 200 | 20 |
+| Tax Burden (% of GDP) | economic | min | 1 | 30 | 5 |
+| Homicide Rate (per 100,000 inhabitants) | life | min | 1 | aucun | 0 |
+| Education Level (% with upper secondary education) | life | max | 1 | aucun | 0 |
+| Citizen Satisfaction | life | max | 1 | aucun | aucun |
+| Life Expectancy (years) | life | max | 1 | 80 | aucun |
+| Corruption Perception Index | life | min | 0 | aucun | aucun |
+| Number of Holidays | life | max | 1 | aucun | aucun |
+| Language | life | max | 0 | aucun | aucun |
+| Dominant Hair Color | life | max | 1 | aucun | aucun |
+| Religion | life | max | 0 | aucun | aucun |
+
+| Scénario | Description | Poids economic | Poids life |
+|---|---|---:|---:|
+| `equal_weights` | Toutes les familles ont le même poids | 0.5 | 0.5 |
+| `economic_higher_weight` | La famille économique est prioritaire | 0.7 | 0.3 |
+| `life_higher_weight` | La famille qualité de vie est prioritaire | 0.3 | 0.7 |
 
-## Executive Summary
+## Methodology - Méthodologie
+
+Le workflow Docker exécute les étapes suivantes dans cet ordre:
+
+1. Satisfaction: compare les alternatives aux minimums configurés pour la famille `economic`.
+2. Dominance: cherche les alternatives non dominées, toujours sur la famille `economic`.
+3. Normalisation: transforme les critères de mesures différentes en valeurs comparables.
+4. Scores pondérés: applique les poids de scénario aux critères normalisés.
+5. ELECTRE: construit des matrices de concordance, puis des graphes de surclassement en gardant les arcs dont la concordance est strictement supérieure à `0.7`.
+
+Dans cette implémentation, la satisfaction élimine les alternatives qui ne satisfont aucun des minimums économiques sélectionnés. Elle ne supprime donc pas automatiquement une alternative dès qu'elle échoue à un seul minimum. Cette nuance est importante, car plusieurs alternatives conservées échouent à certains minimums tout en satisfaisant au moins un critère économique.
 
-This AMCD study evaluates 15 European countries across 11 economic and life-quality criteria to identify the most desirable destinations. The satisfaction filtering phase eliminated 4 countries (France, Czech Republic, Germany, Poland) that failed economic bare minimums, leaving 11 qualified alternatives. The dominance analysis identified 6 non-dominated alternatives: Canada, Norway, Luxembourg, Switzerland, Sweden, and Ireland. Weighted scoring consistently ranks **Switzerland and Luxembourg** as top performers across all scenarios and normalization methods, while ELECTRE outranking analysis with a 0.5 threshold confirms strong concordance relationships supporting these leaders, though results are moderately sensitive to the weighting between economic and life-quality criteria.
+La dominance utilise aussi les seuils des critères: une différence inférieure ou égale au seuil peut être traitée comme une égalité. Les normalisations gardent ensuite seulement les 6 alternatives non dominées et les 13 critères numériques à poids positif.
+
+## Satisfaction Analysis - Analyse de satisfaction
+
+Le fichier [`satisfaction.csv`](satisfaction.csv) indique 11 alternatives retenues et 4 éliminées.
+
+| Alternative retenue | Minimums économiques satisfaits | Lecture |
+|---|---:|---|
+| Luxembourg | 6 / 7 | Profil économique le plus conforme aux minimums, avec seulement le fardeau fiscal au-dessus du minimum configuré. |
+| Switzerland | 6 / 7 | Très conforme; seule la dette dépasse le minimum configuré. |
+| Sweden | 4 / 7 | Passe notamment salaire minimum, PIB par habitant, solde public et électricité. |
+| Canada | 3 / 7 | Passe salaire minimum, PIB par habitant et électricité, mais échoue sur dette, inflation, déficit et fiscalité. |
+| Norway | 3 / 7 | Passe salaire minimum, PIB par habitant et électricité, mais échoue sur dette, inflation, déficit et fiscalité. |
+| Ireland | 3 / 7 | Passe PIB par habitant, déficit et fiscalité, mais échoue sur salaire minimum, dette, inflation et électricité. |
+| Belgium | 1 / 7 | Retenue car au moins un minimum économique est satisfait, ici l'inflation. |
+| Malta | 1 / 7 | Retenue grâce au critère électricité. |
+| Denmark | 1 / 7 | Retenue grâce au PIB par habitant. |
+| Portugal | 1 / 7 | Retenue grâce au déficit/surplus public. |
+| Finland | 1 / 7 | Retenue grâce au salaire minimum. |
 
----
+| Alternative éliminée | Minimums économiques satisfaits | Interprétation |
+|---|---:|---|
+| France | 0 / 7 | Ne satisfait aucun des minimums économiques sélectionnés. |
+| Czech Republic | 0 / 7 | Ne satisfait aucun des minimums économiques sélectionnés. |
+| Germany | 0 / 7 | Ne satisfait aucun des minimums économiques sélectionnés. |
+| Poland | 0 / 7 | Ne satisfait aucun des minimums économiques sélectionnés. |
 
-## Study Purpose
+Cette étape joue un rôle de garde-fou. Les minimums représentent des exigences économiques essentielles dans la configuration: salaire, dette, inflation, PIB par habitant, solde public, prix de l'électricité et fiscalité. Avec le comportement actuel du script, elle retire les alternatives totalement incompatibles avec ces exigences, puis laisse la dominance départager les alternatives partiellement compatibles.
 
-This study aims to identify the most desirable countries in Europe for residence or investment, considering both economic performance and quality of life. The analysis compares alternatives (countries) across economic criteria (wages, debt, inflation, GDP, deficits, electricity prices, taxes) and life criteria (homicide rates, education, citizen satisfaction, life expectancy). Three weighting scenarios explore how the preference for economic vs. life-quality factors influences the rankings.
+## Dominance Analysis - Analyse de dominance
 
----
+Le fichier [`dominance.csv`](dominance.csv) contient les 6 alternatives non dominées:
 
-## Input Data
+| Alternative non dominée |
+|---|
+| Canada |
+| Norway |
+| Luxembourg |
+| Switzerland |
+| Sweden |
+| Ireland |
 
-| Attribute | Value |
-|-----------|-------|
-| Input Config | docker_report.inputs |
-| Criteria File | exemples/countries/criteria.json |
-| Alternatives File | exemples/countries/alternatives.csv |
-| Scenarios File | exemples/countries/scenarios.json |
-| Total Alternatives | 15 |
-| Total Criteria | 11 |
-| Criteria Families | 2 (economic, life) |
-| Analysis Family Filter | economic |
-| ELECTRE Threshold | 0.5 |
+Le journal [`docker_report.log`](docker_report.log) explique les alternatives retirées à cette étape:
 
----
+| Alternative dominée | Dominée par | Interprétation économique |
+|---|---|---|
+| Belgium | Canada | Canada est au moins aussi bon, et meilleur sur plusieurs critères économiques selon les seuils. |
+| Malta | Switzerland | Switzerland domine Malta sur salaire, inflation, PIB et solde public, avec des égalités sur certains seuils. |
+| Denmark | Luxembourg | Luxembourg améliore les principaux critères économiques tout en restant au moins équivalent sur les autres. |
+| Portugal | Luxembourg | Luxembourg domine Portugal sur presque toute la famille économique. |
+| Finland | Luxembourg | Luxembourg conserve une supériorité économique malgré des égalités seuilées sur certains critères. |
 
-## Criteria and Scenarios
+La dominance construit donc une frontière de Pareto économique. Une alternative non dominée n'est pas forcément la meilleure au total; cela signifie seulement qu'aucune autre alternative retenue ne la bat clairement sur tous les critères économiques considérés.
 
-### Criteria Summary
+## Normalisation Outputs - Sorties de normalisation
 
-| Criterion | Family | Direction | Weight | Bare Minimum | Threshold |
-|-----------|--------|-----------|--------|--------------|-----------|
-| Minimum Wage (€/hour) | economic | MAX | 1 | 15 | 1 |
-| Debt (% of GDP) | economic | MIN | 1 | 30 | 10 |
-| Inflation Rate (%) | economic | MIN | 1 | 3 | 2 |
-| GDP per Capita (€) | economic | MAX | 1 | 40,000 | 5,000 |
-| Government Deficit/Surplus (% of GDP) | economic | MIN | 1 | 2 | 0 |
-| Electricity Prices (€/MWh) | economic | MIN | 1 | 200 | 20 |
-| Tax Burden (% of GDP) | economic | MIN | 1 | 30 | 5 |
-| Homicide Rate (per 100,000) | life | MIN | 1 | — | 0 |
-| Education Level (%) | life | MAX | 1 | — | 0 |
-| Citizen Satisfaction | life | MAX | 1 | — | — |
-| Life Expectancy (years) | life | MAX | 1 | 80 | — |
+Les fichiers de normalisation sont dans [`normalised/`](normalised/). Ils prennent comme entrée les 6 alternatives non dominées et 13 critères numériques à poids positif.
 
-### Scenarios Summary
+| Fichier | Usage | Interprétation |
+|---|---|---|
+| [`normalised/normalised_max.csv`](normalised/normalised_max.csv) | Scores pondérés | Ramène chaque critère à une échelle relative au maximum observé. Pour un critère à minimiser, une valeur plus faible devient meilleure. |
+| [`normalised/normalised_max_min.csv`](normalised/normalised_max_min.csv) | Scores pondérés | Étale chaque critère entre 0 et 100. Cette méthode accentue les écarts entre le meilleur et le moins bon de l'échantillon. |
+| [`normalised/normalised_sum.csv`](normalised/normalised_sum.csv) | Scores pondérés | Compare chaque valeur à la somme des valeurs du critère. Les scores sont plus comprimés et les écarts sont moins spectaculaires. |
+| [`normalised/normalised_vector.csv`](normalised/normalised_vector.csv) | Scores pondérés | Utilise une norme vectorielle; utile pour comparer des profils globaux sans forcer un écart 0-100. |
+| [`normalised/normalised_electre_equal_weights.csv`](normalised/normalised_electre_equal_weights.csv) | ELECTRE | Normalisation dédiée à ELECTRE avec prise en compte des seuils des critères. |
+| [`normalised/normalised_electre_economic_higher_weight.csv`](normalised/normalised_electre_economic_higher_weight.csv) | ELECTRE | Même structure de valeurs que les autres fichiers ELECTRE; le scénario change ensuite les poids de concordance. |
+| [`normalised/normalised_electre_life_higher_weight.csv`](normalised/normalised_electre_life_higher_weight.csv) | ELECTRE | Même structure de valeurs que les autres fichiers ELECTRE; le scénario change ensuite les poids de concordance. |
 
-| Scenario | Description | Economic Weight | Life Weight |
-|----------|-------------|-----------------|-------------|
-| equal_weights | All families receive equal emphasis | 0.5 | 0.5 |
-| economic_higher_weight | Economic criteria prioritized | 0.7 | 0.3 |
-| life_higher_weight | Life-quality criteria prioritized | 0.3 | 0.7 |
+Les normalisations expliquent une partie des divergences de classement. `normalised_max_min` amplifie les différences locales entre les 6 alternatives restantes; `normalised_sum` produit des scores plus proches; `normalised_max` et `normalised_vector` donnent des classements plus stables. Une alternative robuste doit donc rester bien placée dans plusieurs normalisations, pas seulement dans une seule.
 
----
+## Weighted Score Analysis - Analyse des scores pondérés
 
-## Methodology
+Le fichier [`weights_results.csv`](weights_results.csv) agrège les critères normalisés selon les trois scénarios. Les poids de famille sont répartis entre les critères de la famille en tenant compte des poids individuels des critères.
 
-### Satisfaction Analysis
-Satisfaction filtering removes alternatives that fail any bare minimum threshold. This step ensures only economically viable alternatives (within the economic family) continue to the next stage. Bare minimums are hard constraints for viability.
+### `equal_weights`
 
-### Dominance Analysis
-Dominance analysis compares alternatives pairwise within the economic family. An alternative is dominated if another alternative is better in at least one criterion and equal or better in all others. Non-dominated alternatives form the Pareto frontier and are carried forward.
+| Normalisation | 1er | Score | 2e | Score | 3e | Score |
+|---|---|---:|---|---:|---|---:|
+| `normalised_max` | Switzerland | 68.84 | Luxembourg | 67.79 | Sweden | 66.13 |
+| `normalised_max_min` | Switzerland | 69.62 | Norway | 59.06 | Luxembourg | 57.57 |
+| `normalised_sum` | Switzerland | 47.84 | Sweden | 47.71 | Luxembourg | 47.43 |
+| `normalised_vector` | Switzerland | 53.70 | Luxembourg | 52.97 | Sweden | 52.43 |
 
-### Normalisation
-Normalization makes criteria with different scales comparable:
-- **normalised_max**: Divides by maximum value (v/max(V))
-- **normalised_max_min**: Scales to 0–100 range ((v-min)/(max-min))
-- **normalised_sum**: Divides by total (v/sum(V))
-- **normalised_vector**: Divides by Euclidean norm (v/√Σv²)
-- **normalised_electre**: Special ELECTRE normalization considering thresholds
+Avec des poids égaux, Switzerland est première dans les quatre méthodes. Luxembourg et Sweden se disputent les places suivantes; Norway devient deuxième uniquement avec `normalised_max_min`. Cela indique que Switzerland a le profil agrégé le plus stable, tandis que le rang entre Luxembourg, Sweden et Norway dépend davantage de la normalisation.
 
-### Weighted Scoring
-Weighted scoring aggregates normalized criteria values using scenario-specific family weights. Each scenario applies different emphasis to economic vs. life criteria, producing alternative rankings for sensitivity analysis.
+### `economic_higher_weight`
 
-### ELECTRE Outranking
-ELECTRE (Elimination Et Choix Traduisant la REalité) compares alternatives pairwise using concordance indices. A directed edge from A→B indicates A outranks B if concordance exceeds the threshold. The analysis reveals outranking relationships and identifies strongest alternatives.
+| Normalisation | 1er | Score | 2e | Score | 3e | Score |
+|---|---|---:|---|---:|---|---:|
+| `normalised_max` | Switzerland | 66.67 | Luxembourg | 64.96 | Sweden | 57.03 |
+| `normalised_max_min` | Switzerland | 73.73 | Luxembourg | 63.94 | Norway | 51.35 |
+| `normalised_sum` | Switzerland | 56.14 | Luxembourg | 55.64 | Sweden | 54.26 |
+| `normalised_vector` | Switzerland | 58.48 | Luxembourg | 57.41 | Sweden | 53.41 |
 
----
+Quand l'économie pèse `0.7`, Switzerland reste première partout. Luxembourg devient le second choix le plus net, avec des scores proches de Switzerland dans `normalised_max`, `normalised_sum` et `normalised_vector`. Sweden reste généralement troisième, sauf avec `normalised_max_min`, où Norway prend la troisième place.
 
-## Satisfaction Analysis
+### `life_higher_weight`
 
-### Results
-The satisfaction analysis screened 15 alternatives against economic family bare minimums:
+| Normalisation | 1er | Score | 2e | Score | 3e | Score |
+|---|---|---:|---|---:|---|---:|
+| `normalised_max` | Norway | 76.14 | Sweden | 75.23 | Switzerland | 71.01 |
+| `normalised_max_min` | Norway | 66.77 | Switzerland | 65.51 | Sweden | 59.01 |
+| `normalised_sum` | Norway | 41.52 | Sweden | 41.15 | Switzerland | 39.55 |
+| `normalised_vector` | Norway | 52.41 | Sweden | 51.46 | Switzerland | 48.91 |
 
-**Retained Alternatives (11):**
-- Canada, Norway, Luxembourg, Switzerland, Sweden, Ireland, Belgium, Malta, Denmark, Portugal, Finland
+Quand la qualité de vie pèse `0.7`, Norway passe première dans les quatre normalisations. Sweden est très compétitive et reste deuxième dans trois méthodes. Switzerland reste forte mais perd sa première place, ce qui montre que son avantage vient surtout du compromis global et de la pondération économique.
 
-**Eliminated Alternatives (4):**
-- **France**: Fails Minimum Wage (€11.88 < €15)
-- **Czech Republic**: Fails Minimum Wage (€4.41 < €15)
-- **Germany**: Fails Debt % of GDP (62.9 > 30 is acceptable, but likely failed another criterion)
-- **Poland**: Fails Minimum Wage (€4.33 < €15)
+Lecture globale des scores pondérés: Switzerland domine les scénarios équilibré et économique; Norway domine le scénario qualité de vie; Luxembourg est le meilleur second choix économique; Sweden est le concurrent le plus stable lorsque la vie quotidienne est fortement pondérée.
 
-### Interpretation
-The satisfaction phase enforces strict economic viability thresholds, removing countries with wages below €15/hour, eliminating lower-wage Central/Eastern European countries and French minimum wage. The retained 11 alternatives form the qualified pool for further analysis.
+## ELECTRE Outranking Analysis - Analyse ELECTRE
 
----
+Le fichier [`electra/electra_results.txt`](electra/electra_results.txt) contient les matrices de concordance. Dans chaque matrice, la ligne est l'alternative A et la colonne l'alternative B. Une valeur élevée signifie que les critères pondérés soutiennent fortement l'affirmation "A surclasse B". Les images de heatmap montrent toute la matrice; les graphes ne gardent que les arcs dont la concordance est strictement supérieure à `0.7`.
 
-## Dominance Analysis
+Les valeurs affichées dans les heatmaps sont arrondies. Certains arcs marqués visuellement à `0.70` sont présents dans le graphe parce que la valeur réelle dans le fichier est très légèrement supérieure à `0.7`.
 
-### Results
-The dominance analysis filtered the 11 retained alternatives within the **economic family**, identifying:
+### Scénario `equal_weights`
 
-**Non-Dominated Alternatives (6):**
-- Canada
-- Norway
-- Luxembourg
-- Switzerland
-- Sweden
-- Ireland
+![Heatmap ELECTRE - poids égaux](electra/heatmap_equal_weights.png)
 
-**Dominated Alternatives (5):**
-- Belgium, Malta, Denmark, Portugal, Finland (each is dominated by at least one non-dominated alternative)
+![Graphe de surclassement ELECTRE - poids égaux](electra/outranking_graph_equal_weights.png)
 
-### Interpretation
-The 6 non-dominated alternatives represent the economic Pareto frontier—no alternative strictly beats all others on economic criteria alone. These form the final candidate set for weighted scoring and ELECTRE analysis, eliminating economically inefficient alternatives while preserving trade-offs.
+| Indicateur | Valeur |
+|---|---:|
+| Alternatives dans le graphe | 6 |
+| Arcs de surclassement conservés | 8 |
+| Seuil appliqué | > 0.7 |
 
----
+| Alternative | Arcs sortants | Arcs entrants | Lecture |
+|---|---:|---:|---|
+| Norway | 2 | 0 | Surclasse fortement Canada et Ireland; n'est surclassée par aucun arc au seuil `0.7`. |
+| Luxembourg | 2 | 1 | Surclasse Sweden et Ireland, mais reçoit aussi un arc de Sweden. |
+| Switzerland | 2 | 0 | Surclasse Canada et Ireland sans recevoir d'arc au seuil. |
+| Sweden | 2 | 1 | Surclasse Luxembourg et Ireland, mais reçoit un arc de Luxembourg. |
+| Canada | 0 | 2 | Reçoit des surclassements de Norway et Switzerland. |
+| Ireland | 0 | 4 | Alternative la plus surclassée dans ce scénario. |
 
-## Normalisation Outputs
+Les relations les plus fortes sont Norway -> Ireland (`0.86`), Luxembourg -> Ireland (`0.85`), puis plusieurs arcs vers Ireland ou Canada autour de `0.77`. La heatmap montre que Norway, Luxembourg et Switzerland ont des lignes globalement plus foncées que Canada et Ireland. Le graphe confirme que les alternatives robustes ne sont pas seulement celles qui ont un bon score moyen: Norway et Switzerland ne reçoivent aucun arc entrant au seuil `0.7`, tandis que Ireland est systématiquement cible de surclassements.
 
-Seven normalization methods were applied to the 6 non-dominated alternatives:
+### Scénario `economic_higher_weight`
 
-| File | Purpose | Method |
-|------|---------|--------|
-| normalised_max.csv | Max scaling | v / max(V) × 100 |
-| normalised_max_min.csv | Min-max scaling | (v-min)/(max-min) × 100 |
-| normalised_sum.csv | Sum scaling | v / sum(V) × 100 |
-| normalised_vector.csv | Vector normalization | v / √Σv² × 100 |
-| normalised_electre_*.csv | ELECTRE input (3 files) | Threshold-aware normalization per scenario |
+![Heatmap ELECTRE - poids économique élevé](electra/heatmap_economic_higher_weight.png)
 
-All normalized datasets feed into weighted scoring and ELECTRE analysis. The variety of methods allows robustness checking: alternatives that rank well across multiple normalizations are more reliable.
+![Graphe de surclassement ELECTRE - poids économique élevé](electra/outranking_graph_economic_higher_weight.png)
 
----
+| Indicateur | Valeur |
+|---|---:|
+| Alternatives dans le graphe | 6 |
+| Arcs de surclassement conservés | 12 |
+| Seuil appliqué | > 0.7 |
 
-## Weighted Score Analysis
+| Alternative | Arcs sortants | Arcs entrants | Lecture |
+|---|---:|---:|---|
+| Luxembourg | 4 | 0 | Meilleur profil de surclassement économique: surclasse Canada, Norway, Sweden et Ireland. |
+| Switzerland | 3 | 0 | Très forte, notamment contre Canada, Norway et Ireland. |
+| Norway | 3 | 2 | Surclasse Canada, Sweden et Ireland, mais reçoit des arcs de Luxembourg et Switzerland. |
+| Sweden | 1 | 2 | Surclasse Ireland mais est surclassée par Luxembourg et Norway. |
+| Ireland | 1 | 4 | Ne surclasse que Canada et reçoit beaucoup d'arcs. |
+| Canada | 0 | 4 | Alternative la plus faible dans ce graphe économique. |
 
-Weighted scoring aggregates normalized criteria using scenario-specific family weights. The table below shows the best-scoring alternative for each scenario and normalization method:
+Le scénario économique densifie le graphe: 12 arcs contre 8 avec poids égaux. Cela signifie que les poids économiques rendent les préférences pairwise plus tranchées. Luxembourg est ici le signal principal d'ELECTRE: sa ligne est très forte contre Sweden et Ireland (`0.85`), mais aussi au-dessus du seuil contre Canada et Norway. Switzerland reste très solide, avec une concordance de `0.80` contre Canada et `0.75` contre Ireland. Cette lecture nuance les scores pondérés: Switzerland garde le meilleur score moyen, mais ELECTRE donne à Luxembourg le meilleur pouvoir de surclassement économique.
 
-### Equal Weights Scenario (0.5 economic, 0.5 life)
+### Scénario `life_higher_weight`
 
-| Normalization | Best Alternative | Score | 2nd Best | 3rd Best |
-|----------------|------------------|-------|---------|---------|
-| normalised_max | Switzerland | 68.84 | Luxembourg | 67.79 |
-| normalised_max_min | Switzerland | 69.62 | Luxembourg | 57.57 |
-| normalised_sum | Switzerland | 47.84 | Sweden | 47.71 |
-| normalised_vector | Switzerland | 53.70 | Luxembourg | 52.97 |
+![Heatmap ELECTRE - poids qualité de vie élevé](electra/heatmap_life_higher_weight.png)
 
-### Economic Higher Weight Scenario (0.7 economic, 0.3 life)
+![Graphe de surclassement ELECTRE - poids qualité de vie élevé](electra/outranking_graph_life_higher_weight.png)
 
-| Normalization | Best Alternative | Score | 2nd Best | 3rd Best |
-|----------------|------------------|-------|---------|---------|
-| normalised_max | Switzerland | 66.67 | Luxembourg | 64.96 |
-| normalised_max_min | Switzerland | 73.73 | Luxembourg | 63.94 |
-| normalised_sum | Switzerland | 56.14 | Luxembourg | 55.64 |
-| normalised_vector | Switzerland | 58.48 | Luxembourg | 57.41 |
+| Indicateur | Valeur |
+|---|---:|
+| Alternatives dans le graphe | 6 |
+| Arcs de surclassement conservés | 10 |
+| Seuil appliqué | > 0.7 |
 
-### Life Higher Weight Scenario (0.3 economic, 0.7 life)
+| Alternative | Arcs sortants | Arcs entrants | Lecture |
+|---|---:|---:|---|
+| Norway | 3 | 0 | Surclasse Canada, Switzerland et Ireland; c'est le profil ELECTRE le plus fort du scénario. |
+| Sweden | 3 | 0 | Surclasse Canada, Luxembourg et Ireland; très robuste quand `life` est prioritaire. |
+| Switzerland | 2 | 1 | Surclasse Canada et Ireland, mais reçoit un arc de Norway. |
+| Luxembourg | 1 | 1 | Surclasse fortement Ireland, mais est surclassée par Sweden. |
+| Canada | 1 | 3 | Ne surclasse que Ireland et reçoit des arcs de Norway, Sweden et Switzerland. |
+| Ireland | 0 | 5 | Reçoit un arc de toutes les autres alternatives. |
 
-| Normalization | Best Alternative | Score | 2nd Best | 3rd Best |
-|----------------|------------------|-------|---------|---------|
-| normalised_max | Norway | 76.14 | Sweden | 75.23 |
-| normalised_max_min | Sweden | 59.01 | Switzerland | 65.51 |
-| normalised_sum | Norway | 41.52 | Sweden | 41.15 |
-| normalised_vector | Norway | 52.41 | Sweden | 51.46 |
+La heatmap montre un déplacement net vers Norway et Sweden: leurs lignes deviennent plus fortes, et elles n'ont aucun arc entrant au seuil `0.7`. Le graphe est plus sélectif que le scénario économique, mais il confirme très bien le résultat des scores pondérés: Norway devient l'alternative de référence lorsque les critères de vie sont prioritaires, avec Sweden comme concurrente directe. Ireland est la cible de tous les arcs, ce qui indique une faiblesse relative très nette dans les comparaisons ELECTRE de ce scénario.
 
-### Key Findings
-- **Switzerland** dominates under equal weights and economic focus (all methods)
-- **Norway and Sweden** emerge as strong alternatives when life quality is weighted heavily
-- **Luxembourg** consistently ranks 2nd across most scenarios and methods
-- Results show **moderate sensitivity** to scenario weights: Switzerland's lead weakens under life-focused weighting, where Nordic countries compete more closely
+## Scenario Sensitivity - Sensibilité aux scénarios
 
----
+| Scénario | Meilleur selon scores pondérés | Meilleur signal ELECTRE | Interprétation |
+|---|---|---|---|
+| `equal_weights` | Switzerland | Norway, Switzerland et Luxembourg forment le groupe fort | Les scores moyens désignent Switzerland, mais ELECTRE montre un trio/quatuor robuste plutôt qu'un vainqueur unique. |
+| `economic_higher_weight` | Switzerland | Luxembourg | Les deux méthodes convergent sur Luxembourg et Switzerland comme meilleurs profils, avec un ordre différent. |
+| `life_higher_weight` | Norway | Norway, puis Sweden | Accord fort entre scores pondérés et ELECTRE sur la montée de Norway et Sweden. |
 
-## ELECTRE Outranking Analysis
+Switzerland est très stable dans les scores pondérés, surtout lorsque l'économie compte autant ou plus que la qualité de vie. Luxembourg est particulièrement robuste en ELECTRE économique, car elle surclasse davantage d'alternatives au seuil `0.7`. Norway est l'alternative la plus sensible positivement au poids de la famille `life`: elle passe de concurrente forte à première claire. Sweden suit le même mouvement, avec un profil de vie qui devient décisif lorsque la pondération change.
 
-ELECTRE analysis compares alternatives pairwise using concordance indices derived from weighted criteria differences. A directed edge A→B indicates A has concordance > 0.5 over B.
+Canada et Ireland sont plus fragiles. Canada est souvent dernier ou proche du bas dans les scores pondérés économiques et reçoit beaucoup d'arcs entrants dans ELECTRE. Ireland conserve certains atouts dans les scores, mais les graphes la montrent presque toujours comme l'alternative la plus surclassée.
 
-### Equal Weights Scenario
+## Final Interpretation - Interprétation finale
 
-Concordance Matrix:
-```
-             Canada  Norway  Luxembourg  Switzerland  Sweden  Ireland
-Canada         —      0.44      0.55         0.46       0.52     0.63
-Norway       0.77      —        0.56         0.63       0.69     0.86
-Luxembourg   0.69     0.68      —            0.54       0.75     0.85
-Switzerland  0.76     0.69      0.62         —          0.61     0.77
-Sweden       0.63     0.62      0.70         0.48       —        0.77
-Ireland      0.69     0.44      0.32         0.38       0.38     —
-```
+Le résultat ne doit pas être lu comme un classement unique et définitif. Les méthodes racontent trois choses complémentaires.
 
-![Equal weights concordance heatmap](electra/heatmap_equal_weights.png)
+Premièrement, les scores pondérés donnent un vainqueur clair par préférence: Switzerland pour les scénarios équilibré et économique, Norway pour le scénario qualité de vie. Si la décision doit être expliquée par une moyenne agrégée, ces deux alternatives sont les références principales.
 
-![Equal weights outranking graph](electra/outranking_graph_equal_weights.png)
+Deuxièmement, ELECTRE introduit une logique plus comparative: une alternative est forte lorsqu'elle surclasse beaucoup d'autres alternatives au-dessus du seuil `0.7` et reçoit peu d'arcs entrants. Avec cette lecture, Luxembourg devient le meilleur profil économique de surclassement, Switzerland reste très forte, et Norway/Sweden dominent lorsque la qualité de vie est prioritaire.
 
-**Interpretation**: The graph has 6 nodes and 23 directed edges. Strong outranking relationships exist (e.g., Norway→Canada: 0.77, Luxembourg→Ireland: 0.85, Switzerland→Canada: 0.76), indicating robust pairwise dominance. **Switzerland and Luxembourg** receive many incoming edges (suggesting strong concordance against them), while **Norway** sends many strong edges, positioning it as a robust outranker.
+Troisièmement, la robustesse vient de la convergence. Switzerland, Luxembourg, Norway et Sweden restent les alternatives réellement crédibles après toutes les étapes. Canada et Ireland survivent à la dominance économique, mais elles sont moins convaincantes une fois les scores pondérés et ELECTRE pris ensemble.
 
-### Economic Higher Weight Scenario
+Conclusion décisionnelle:
 
-Concordance Matrix (selected values):
-```
-             Canada  Norway  Luxembourg  Switzerland  Sweden  Ireland
-Canada         —      0.55      0.50         0.45       0.60     0.55
-Norway       0.75      —        0.45         0.55       0.70     0.80
-Luxembourg   0.70     0.75      —            0.55       0.85     0.85
-Switzerland  0.80     0.70      0.60         —          0.65     0.75
-Sweden       0.55     0.60      0.65         0.40       —        0.75
-Ireland      0.70     0.55      0.25         0.40       0.40     —
-```
+| Préférence de décision | Alternative à privilégier | Justification |
+|---|---|---|
+| Meilleur score pondéré économique ou équilibré | Switzerland | Première dans toutes les normalisations des scénarios `equal_weights` et `economic_higher_weight`. |
+| Meilleur surclassement économique ELECTRE | Luxembourg | Plus grand nombre d'arcs sortants dans le graphe économique, sans arc entrant au seuil `0.7`. |
+| Priorité à la qualité de vie | Norway | Première dans toutes les normalisations du scénario `life_higher_weight` et meilleur signal ELECTRE du même scénario. |
+| Choix robuste de second rang | Sweden | Très forte dès que la famille `life` est importante, avec un graphe ELECTRE favorable dans ce scénario. |
 
-![Economic higher weight heatmap](electra/heatmap_economic_higher_weight.png)
+## Limitations and Assumptions - Limites et hypothèses
 
-![Economic higher weight outranking graph](electra/outranking_graph_economic_higher_weight.png)
+Les résultats dépendent entièrement des critères, poids, directions, seuils et minimums définis dans les fichiers d'entrée. Aucun fait externe sur les pays n'a été ajouté dans cette interprétation.
 
-**Interpretation**: Economic weighting strengthens **Switzerland and Luxembourg** (increased concordance), reflecting their strong economic performance. The graph again shows 23 edges with similar density, confirming stable outranking patterns even under scenario reweighting.
+La satisfaction et la dominance utilisent uniquement la famille `economic`, conformément à la commande Docker demandée. Les critères de qualité de vie ne participent donc pas au filtrage initial ni à la frontière de dominance; ils interviennent ensuite dans la normalisation, les scores pondérés et ELECTRE.
 
-### Life Higher Weight Scenario
+Le comportement actuel du script de satisfaction élimine les alternatives qui satisfont zéro minimum économique. Si l'intention métier était d'éliminer toute alternative échouant à au moins un minimum, les résultats changeraient fortement.
 
-Concordance Matrix (selected values):
-```
-             Canada  Norway  Luxembourg  Switzerland  Sweden  Ireland
-Canada         —      0.33      0.60         0.48       0.45     0.71
-Norway       0.80      —        0.67         0.71       0.68     0.91
-Luxembourg   0.68     0.61      —            0.52       0.65     0.84
-Switzerland  0.72     0.68      0.64         —          0.56     0.80
-Sweden       0.71     0.64      0.75         0.55       —        0.80
-Ireland      0.68     0.33      0.39         0.36       0.36     —
-```
+Le seuil ELECTRE `0.7` est structurant. Un seuil plus bas densifierait les graphes; un seuil plus haut ne garderait que les surclassements les plus forts. Ici, les graphes sont déjà assez sélectifs: 8, 12 et 10 arcs selon les scénarios.
 
-![Life higher weight heatmap](electra/heatmap_life_higher_weight.png)
+Les normalisations ne sont pas interchangeables. `normalised_max_min` amplifie les écarts; `normalised_sum` les compresse; les conclusions les plus fiables sont celles qui résistent à plusieurs méthodes.
 
-![Life higher weight outranking graph](electra/outranking_graph_life_higher_weight.png)
+Les critères à poids nul ou non numériques ont un impact limité ou nul dans ce workflow. En particulier, `Corruption Perception Index`, `Language` et `Religion` ne changent pas les scores finaux générés ici.
 
-**Interpretation**: Life-quality weighting increases **Norway's** concordance edges (its strong life metrics improve outranking power), and **Sweden** shows stronger concordance. The graph maintains 23 edges, but edge weights shift to favor Nordic countries. **Ireland's** concordance weakens under life focus (lower citizen satisfaction and other life metrics penalize it).
+## Artifact Index - Index des artefacts
 
----
-
-## Scenario Sensitivity
-
-### Preference Rankings Across Scenarios
-
-| Rank | Equal Weights | Economic Focus | Life Focus |
-|------|---------------|----------------|------------|
-| 1st | Switzerland | Switzerland | Norway |
-| 2nd | Luxembourg | Luxembourg | Sweden |
-| 3rd | Norway | Switzerland | Luxembourg |
-| 4th | Sweden | Sweden | Switzerland |
-| 5th | Canada | Norway | Canada |
-| 6th | Ireland | Canada | Ireland |
-
-### Sensitivity Analysis
-
-- **Switzerland**: Robust leader under equal and economic scenarios (1st place); drops to 4th under life focus due to moderate citizen satisfaction and education.
-- **Luxembourg**: Consistently strong (2nd or higher) across all scenarios; balances high GDP, low debt, and good life metrics.
-- **Norway**: Weak under economic focus (due to high electricity prices and taxes), strong under life focus (excellent life expectancy, low homicide, high satisfaction).
-- **Sweden**: Stable middle performer (3rd–4th); strong life metrics offset by high tax burden under economic focus.
-- **Canada**: Drops from 5th to 5th across scenarios; strong in economic criteria but lower citizen satisfaction limits life-quality advantages.
-- **Ireland**: Weakest performer; high electricity prices and modest citizen satisfaction penalize it across scenarios.
-
-### Robustness Assessment
-- **High robustness**: Luxembourg, Norway (top 2–3 positions)
-- **Moderate robustness**: Switzerland, Sweden (sensitive to weighting)
-- **Low robustness**: Canada, Ireland (struggle in most scenarios)
-
----
-
-## Final Interpretation
-
-### Decision-Focused Conclusion
-
-Based on integrated analysis across satisfaction filtering, dominance, weighted scoring (4 normalization methods), and ELECTRE outranking:
-
-1. **Switzerland** is the strongest choice under economic and balanced scenarios, excelling in minimum wage, GDP per capita, and fiscal stability. However, its moderate citizen satisfaction creates vulnerability under life-focused priorities.
-
-2. **Luxembourg** is the most robust choice overall, combining strong economic performance (highest GDP, lowest debt) with solid life-quality metrics. It ranks in the top 2–3 across all scenarios and methods, offering the most stable decision.
-
-3. **Norway** emerges as the preferred alternative if life quality (health, satisfaction, education, safety) dominates the decision. Its strong life metrics overcome economic weaknesses (high taxes, electricity prices).
-
-**Method Agreement**: Weighted scoring and ELECTRE show strong agreement on Switzerland and Luxembourg as leaders under equal/economic weighting. Under life weighting, methods show more divergence, with Norway ranking higher in ELECTRE while weighted scores split between Norway and Sweden depending on normalization.
-
-**Trade-off Summary**:
-- Choose **Switzerland** for economic strength and high wages
-- Choose **Luxembourg** for balanced robustness
-- Choose **Norway** for life-quality maximization
-
----
-
-## Limitations and Assumptions
-
-1. **Criteria Selection**: Results depend entirely on the 11 configured criteria. Omitted factors (climate, cultural fit, political stability, etc.) are not considered.
-
-2. **Bare Minimums and Thresholds**: Satisfaction filtering uses rigid bare minimum thresholds; alternatives marginally below thresholds are eliminated without graduated penalty.
-
-3. **Family Filter**: Dominance analysis used only the "economic" family, not the full criterion set. This may mask dominated alternatives that are weak in life criteria alone.
-
-4. **Normalization Sensitivity**: Results vary across the 4 weighted-scoring normalization methods. No single normalization is objectively "correct"; consensus across methods increases confidence.
-
-5. **ELECTRE Threshold**: The 0.5 concordance threshold is arbitrary. Changing it would alter outranking relationships and graph density.
-
-6. **Data Quality**: Criteria values are static snapshots; real-world conditions change. Sensitivity to small data changes is not analyzed.
-
-7. **Scenario Weights**: The three scenarios are illustrative; different weight combinations would produce different rankings.
-
-8. **Non-Compensatory Effects**: Weighted scoring is fully compensatory (high scores in one criterion offset low scores in another). Alternatives with extreme weakness in any criterion are not filtered.
-
----
-
-## Artifact Index
-
-| Artifact | Purpose | Link |
-|----------|---------|------|
-| satisfaction.csv | Retained alternatives after bare-minimum filtering | [Link](satisfaction.csv) |
-| dominance.csv | Non-dominated alternatives (Pareto frontier) | [Link](dominance.csv) |
-| weights_results.csv | Weighted scores across scenarios and normalizations | [Link](weights_results.csv) |
-| normalised/normalised_max.csv | Max-scaled normalized criteria | [Link](normalised/normalised_max.csv) |
-| normalised/normalised_max_min.csv | Min-max scaled normalized criteria | [Link](normalised/normalised_max_min.csv) |
-| normalised/normalised_sum.csv | Sum-scaled normalized criteria | [Link](normalised/normalised_sum.csv) |
-| normalised/normalised_vector.csv | Vector-normalized criteria | [Link](normalised/normalised_vector.csv) |
-| normalised/normalised_electre_equal_weights.csv | ELECTRE input (equal weights scenario) | [Link](normalised/normalised_electre_equal_weights.csv) |
-| normalised/normalised_electre_economic_higher_weight.csv | ELECTRE input (economic focus scenario) | [Link](normalised/normalised_electre_economic_higher_weight.csv) |
-| normalised/normalised_electre_life_higher_weight.csv | ELECTRE input (life focus scenario) | [Link](normalised/normalised_electre_life_higher_weight.csv) |
-| electra/electra_results.txt | ELECTRE concordance matrices for all scenarios | [Link](electra/electra_results.txt) |
-| electra/heatmap_equal_weights.png | Concordance heatmap (equal weights) | [Link](electra/heatmap_equal_weights.png) |
-| electra/heatmap_economic_higher_weight.png | Concordance heatmap (economic focus) | [Link](electra/heatmap_economic_higher_weight.png) |
-| electra/heatmap_life_higher_weight.png | Concordance heatmap (life focus) | [Link](electra/heatmap_life_higher_weight.png) |
-| electra/outranking_graph_equal_weights.png | ELECTRE outranking graph (equal weights) | [Link](electra/outranking_graph_equal_weights.png) |
-| electra/outranking_graph_economic_higher_weight.png | ELECTRE outranking graph (economic focus) | [Link](electra/outranking_graph_economic_higher_weight.png) |
-| electra/outranking_graph_life_higher_weight.png | ELECTRE outranking graph (life focus) | [Link](electra/outranking_graph_life_higher_weight.png) |
-| docker_report.log | Execution log and diagnostics | [Link](docker_report.log) |
-| README.md | Workflow documentation | [Link](README.md) |
-
----
-
-**Report Generated**: 26 May 2026  
-**Analysis Framework**: AMCD (Aide Multicritère à la Décision)  
-**Methods**: Satisfaction Filtering, Dominance Analysis, Normalization, Weighted Scoring, ELECTRE Outranking
+| Artefact | Description |
+|---|---|
+| [`README.md`](README.md) | Résumé automatique des paramètres Docker et des fichiers produits. |
+| [`docker_report.log`](docker_report.log) | Journal complet du workflow Docker. |
+| [`satisfaction.csv`](satisfaction.csv) | Alternatives retenues et éliminées par l'étape de satisfaction. |
+| [`dominance.csv`](dominance.csv) | Alternatives non dominées après dominance économique. |
+| [`weights_results.csv`](weights_results.csv) | Scores pondérés par scénario et par méthode de normalisation. |
+| [`normalised/normalised_max.csv`](normalised/normalised_max.csv) | Données normalisées par maximum. |
+| [`normalised/normalised_max_min.csv`](normalised/normalised_max_min.csv) | Données normalisées min-max. |
+| [`normalised/normalised_sum.csv`](normalised/normalised_sum.csv) | Données normalisées par somme. |
+| [`normalised/normalised_vector.csv`](normalised/normalised_vector.csv) | Données normalisées vectoriellement. |
+| [`normalised/normalised_electre_equal_weights.csv`](normalised/normalised_electre_equal_weights.csv) | Données d'entrée ELECTRE pour `equal_weights`. |
+| [`normalised/normalised_electre_economic_higher_weight.csv`](normalised/normalised_electre_economic_higher_weight.csv) | Données d'entrée ELECTRE pour `economic_higher_weight`. |
+| [`normalised/normalised_electre_life_higher_weight.csv`](normalised/normalised_electre_life_higher_weight.csv) | Données d'entrée ELECTRE pour `life_higher_weight`. |
+| [`electra/electra_results.txt`](electra/electra_results.txt) | Matrices de concordance ELECTRE pour les trois scénarios. |
+| [`electra/heatmap_equal_weights.png`](electra/heatmap_equal_weights.png) | Heatmap de concordance pour les poids égaux. |
+| [`electra/outranking_graph_equal_weights.png`](electra/outranking_graph_equal_weights.png) | Graphe de surclassement pour les poids égaux. |
+| [`electra/heatmap_economic_higher_weight.png`](electra/heatmap_economic_higher_weight.png) | Heatmap de concordance avec priorité économique. |
+| [`electra/outranking_graph_economic_higher_weight.png`](electra/outranking_graph_economic_higher_weight.png) | Graphe de surclassement avec priorité économique. |
+| [`electra/heatmap_life_higher_weight.png`](electra/heatmap_life_higher_weight.png) | Heatmap de concordance avec priorité qualité de vie. |
+| [`electra/outranking_graph_life_higher_weight.png`](electra/outranking_graph_life_higher_weight.png) | Graphe de surclassement avec priorité qualité de vie. |
