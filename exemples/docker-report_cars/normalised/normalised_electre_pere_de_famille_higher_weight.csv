@@ -1,0 +1,6 @@
+name,Reliability Score (/100),Luxury/Comfort Score (/10),Boot Volume (L),Safety Rating (Euro NCAP stars),Warranty Length (years),Affordability Score (/100),Power (hp),Torque (Nm),0-100 km/h (s),Top Speed (km/h),Sportiness Score (/10)
+Dacia Sandero 3,16.4,5.8,6.56,2.0,3.0,19.0,5.0,5.666666666666667,0.0,18.3,5.3
+Citroen C3 IV,14.4,6.6,6.2,4.0,2.0,17.6,5.0,6.833333333333333,2.0,18.3,5.8
+Toyota Yaris,18.4,6.8,5.72,5.0,3.0,15.0,5.8,4.7,3.8000000000000007,17.5,6.5
+Toyota Yaris Cross,18.4,7.0,7.94,5.0,3.0,13.0,5.8,4.7,1.8000000000000007,17.0,5.8
+Tesla Model Y,14.0,8.0,17.08,5.0,4.0,8.4,14.95,14.0,11.399999999999999,21.7,8.8
